@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Profile, Subject, AppView } from '@/types';
+import type { Profile, Subject, AppView, Developer } from '@/types';
 
 interface AppContextType {
   userId: string | null;
   profile: Profile | null;
   loading: boolean;
   subjects: Subject[];
+  developers: Developer[];
   refreshSubjects: () => Promise<void>;
+  refreshDevelopers: () => Promise<void>;
   view: AppView;
   navigate: (v: AppView) => void;
   signOut: () => Promise<void>;
@@ -22,6 +24,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [developers, setDevelopers] = useState<Developer[]>([]);
   const [view, setView] = useState<AppView>({ type: 'auth' });
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -90,6 +93,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (userId) await fetchProfile(userId);
   }, [userId, fetchProfile]);
 
+  const fetchDevelopers = useCallback(async () => {
+    const { data } = await supabase
+      .from('developers')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+    if (data) setDevelopers(data as Developer[]);
+  }, []);
+
+  const refreshDevelopers = useCallback(async () => {
+    await fetchDevelopers();
+  }, [fetchDevelopers]);
+
   useEffect(() => {
     // Race the session check with a timeout so the app never hangs on a blank screen
     const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
@@ -97,6 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserId(session.user.id);
         fetchProfile(session.user.id);
         fetchSubjects(session.user.id);
+        fetchDevelopers();
         setView({ type: 'home' });
       }
     });
@@ -113,17 +130,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserId(session.user.id);
         fetchProfile(session.user.id);
         fetchSubjects(session.user.id);
+        fetchDevelopers();
         setView({ type: 'home' });
       } else {
         setUserId(null);
         setProfile(null);
         setSubjects([]);
+        setDevelopers([]);
         setView({ type: 'auth' });
       }
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [fetchProfile, fetchSubjects]);
+  }, [fetchProfile, fetchSubjects, fetchDevelopers]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -145,7 +164,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         profile,
         loading,
         subjects,
+        developers,
         refreshSubjects,
+        refreshDevelopers,
         view,
         navigate,
         signOut,

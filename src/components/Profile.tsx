@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X } from 'lucide-react';
+import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X, Code } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 
@@ -81,7 +81,7 @@ const ChipSelector: React.FC<ChipSelectorProps> = ({
 
 // ── Main Profile component ───────────────────────────────────
 export const Profile: React.FC = () => {
-  const { profile, subjects, signOut, userId, refreshProfile } = useApp();
+  const { profile, subjects, signOut, userId, refreshProfile, navigate } = useApp();
 
   const totalTopics = subjects.reduce((sum, s) => sum + (s.total_topics ?? 0), 0);
   const completedTopics = subjects.reduce((sum, s) => sum + (s.completed_topics ?? 0), 0);
@@ -419,6 +419,16 @@ export const Profile: React.FC = () => {
           <p className="text-slate-700 text-xs">Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'}</p>
         </div>
       </div>
+
+      {/* Developers */}
+      <button
+        onClick={() => navigate({ type: 'developers' })}
+        className="w-full font-semibold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-98"
+        style={{ background: 'rgba(99,102,241,0.07)', border: '1px solid rgba(99,102,241,0.2)', color: '#818cf8' }}
+      >
+        <Code className="w-4 h-4" />
+        Developers
+      </button>
 
       {/* Logout */}
       <button

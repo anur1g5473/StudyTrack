@@ -7,6 +7,7 @@ import { TopicDetail } from './TopicDetail';
 import { Focus } from './Focus';
 import { Stats } from './Stats';
 import { Profile } from './Profile';
+import { Developers } from './Developers';
 import { Templates } from './Templates';
 import { Admin } from './Admin';
 import { useApp } from '@/context/AppContext';
@@ -29,6 +30,7 @@ export const Layout: React.FC = () => {
       case 'focus': return <Focus />;
       case 'stats': return <Stats />;
       case 'profile': return <Profile />;
+      case 'developers': return <Developers />;
       case 'templates': return <Templates />;
       case 'admin': return <Admin />;
       default: return <Home />;
@@ -80,6 +82,7 @@ const ViewTitle: React.FC = () => {
     focus: 'Focus',
     stats: 'Stats',
     profile: 'Profile',
+    developers: 'Developers',
     templates: 'Templates',
     admin: 'Admin Panel',
   };

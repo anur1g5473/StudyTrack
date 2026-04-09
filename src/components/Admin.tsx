@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2, Plus, X, Users, BookOpen, Settings } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Plus, X, Users, BookOpen, Settings, Code } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
+import type { Developer } from '@/types';
 
 interface UserData {
   id: string;
@@ -18,9 +19,14 @@ interface UserData {
 
 export const Admin: React.FC = () => {
   const { navigate, isAdmin } = useApp();
-  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'developers' | 'settings'>('users');
   const [users, setUsers] = useState<UserData[]>([]);
+  const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [devFormOpen, setDevFormOpen] = useState(false);
+  const [newDeveloper, setNewDeveloper] = useState<Partial<Developer>>({
+    skills: [],
+  });
 
   // Security check: If user is not admin, show access denied
   if (!isAdmin) {
@@ -47,6 +53,7 @@ export const Admin: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchDevelopers();
   }, []);
 
   const fetchUsers = async () => {
@@ -62,7 +69,52 @@ export const Admin: React.FC = () => {
     setLoading(false);
   };
 
-  const deleteUser = async (userId: string) => {
+  const fetchDevelopers = async () => {
+    const { data } = await supabase
+      .from('developers')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (data) setDevelopers(data as Developer[]);
+  };
+
+  const addDeveloper = async () => {
+    if (!newDeveloper.name || !newDeveloper.email || !newDeveloper.role) {
+      alert('Please fill in required fields');
+      return;
+    }
+
+    try {
+      await supabase.from('developers').insert({
+        name: newDeveloper.name,
+        email: newDeveloper.email,
+        role: newDeveloper.role,
+        github_profile: newDeveloper.github_profile,
+        linkedin_profile: newDeveloper.linkedin_profile,
+        bio: newDeveloper.bio,
+        contributions: newDeveloper.contributions,
+        skills: newDeveloper.skills || [],
+        is_active: true,
+      });
+      setNewDeveloper({ skills: [] });
+      setDevFormOpen(false);
+      fetchDevelopers();
+    } catch (error) {
+      console.error('Error adding developer:', error);
+    }
+  };
+
+  const deleteDeveloper = async (devId: string) => {
+    if (!confirm('Are you sure? This will remove the developer.')) return;
+    
+    try {
+      await supabase.from('developers').delete().eq('id', devId);
+      fetchDevelopers();
+    } catch (error) {
+      console.error('Error deleting developer:', error);
+    }
+  };
+
+ const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure? This will delete all user data.')) return;
 
     try {
@@ -94,7 +146,7 @@ export const Admin: React.FC = () => {
 
       {/* Tab Navigation */}
       <div className="flex gap-2 mb-4">
-        {['users', 'templates', 'settings'].map((tab) => (
+        {['users', 'templates', 'developers', 'settings'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as typeof activeTab)}
@@ -106,6 +158,7 @@ export const Admin: React.FC = () => {
             }}>
             {tab === 'users' && <Users className="w-4 h-4" />}
             {tab === 'templates' && <BookOpen className="w-4 h-4" />}
+            {tab === 'developers' && <Code className="w-4 h-4" />}
             {tab === 'settings' && <Settings className="w-4 h-4" />}
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
@@ -219,6 +272,116 @@ export const Admin: React.FC = () => {
           <p className="text-slate-500 text-xs mt-4 text-center">
             Edit template functionality coming soon. Edit data in src/data/templates.ts
           </p>
+        </div>
+      )}
+
+      {/* Developers Tab */}
+      {activeTab === 'developers' && (
+        <div className="rounded-2xl overflow-hidden"
+          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center justify-between">
+              <p className="text-white font-semibold">Developers ({developers.length})</p>
+              <button
+                onClick={() => setDevFormOpen(!devFormOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                <Plus className="w-3.5 h-3.5" />
+                Add Developer
+              </button>
+            </div>
+          </div>
+
+          {/* Add developer form */}
+          {devFormOpen && (
+            <div className="px-4 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={newDeveloper.name || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={newDeveloper.email || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, email: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <input
+                  type="text"
+                  placeholder="Role (e.g., Full Stack Developer)"
+                  value={newDeveloper.role || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, role: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <input
+                  type="text"
+                  placeholder="GitHub Profile"
+                  value={newDeveloper.github_profile || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, github_profile: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <input
+                  type="text"
+                  placeholder="LinkedIn Profile URL"
+                  value={newDeveloper.linkedin_profile || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, linkedin_profile: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <textarea
+                  placeholder="Bio"
+                  value={newDeveloper.bio || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, bio: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50 h-16 resize-none"
+                />
+                <textarea
+                  placeholder="Contributions"
+                  value={newDeveloper.contributions || ''}
+                  onChange={(e) => setNewDeveloper({ ...newDeveloper, contributions: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50 h-16 resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={addDeveloper}
+                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                    style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>
+                    Save Developer
+                  </button>
+                  <button
+                    onClick={() => setDevFormOpen(false)}
+                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-400"
+                    style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Developers list */}
+          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+            {developers.length === 0 ? (
+              <div className="px-4 py-8 text-center text-slate-500">No developers added yet</div>
+            ) : (
+              developers.map((dev) => (
+                <div key={dev.id} className="px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-semibold">{dev.name}</p>
+                    <p className="text-slate-500 text-xs">{dev.role}</p>
+                  </div>
+                  <button
+                    onClick={() => deleteDeveloper(dev.id)}
+                    className="p-1.5 rounded-lg transition-all duration-200 hover:bg-red-500/20"
+                    style={{ background: 'rgba(239,68,68,0.1)' }}>
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       )}
 

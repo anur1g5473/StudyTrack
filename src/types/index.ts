@@ -49,6 +49,22 @@ export interface Topic {
   created_at: string;
 }
 
+export interface Developer {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  github_profile?: string;
+  linkedin_profile?: string;
+  bio?: string;
+  image_url?: string;
+  skills: string[];
+  contributions?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StudySession {
   id: string;
   user_id: string;
@@ -71,6 +87,7 @@ export type AppView =
   | { type: 'focus' }
   | { type: 'stats' }
   | { type: 'profile' }
+  | { type: 'developers' }
   | { type: 'templates' }
   | { type: 'admin' };
 
