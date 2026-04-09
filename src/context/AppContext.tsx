@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import type { Profile, Subject, AppView, Developer } from '@/types';
+import type { Profile, Subject, AppView, Developer, Branch, College, AcademicYear, Achievement } from '@/types';
 
 interface AppContextType {
   userId: string | null;
@@ -8,8 +8,13 @@ interface AppContextType {
   loading: boolean;
   subjects: Subject[];
   developers: Developer[];
+  branches: Branch[];
+  colleges: College[];
+  academicYears: AcademicYear[];
+  achievements: Achievement[];
   refreshSubjects: () => Promise<void>;
   refreshDevelopers: () => Promise<void>;
+  refreshSystemConfig: () => Promise<void>;
   view: AppView;
   navigate: (v: AppView) => void;
   signOut: () => Promise<void>;
@@ -25,6 +30,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [view, setView] = useState<AppView>({ type: 'auth' });
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -93,6 +102,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (userId) await fetchProfile(userId);
   }, [userId, fetchProfile]);
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   const fetchDevelopers = useCallback(async () => {
     const { data } = await supabase
       .from('developers')
@@ -106,6 +119,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await fetchDevelopers();
   }, [fetchDevelopers]);
 
+  const fetchSystemConfig = useCallback(async () => {
+    // Fetch branches
+    const { data: branchesData } = await supabase
+      .from('branches')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index', { ascending: true });
+    if (branchesData) setBranches(branchesData as Branch[]);
+
+    // Fetch colleges
+    const { data: collegesData } = await supabase
+      .from('colleges')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index', { ascending: true });
+    if (collegesData) setColleges(collegesData as College[]);
+
+    // Fetch academic years
+    const { data: yearsData } = await supabase
+      .from('academic_years')
+      .select('*')
+      .eq('is_active', true)
+      .order('order_index', { ascending: true });
+    if (yearsData) setAcademicYears(yearsData as AcademicYear[]);
+
+    // Fetch achievements
+    const { data: achievementsData } = await supabase
+      .from('achievements')
+      .select('*')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true });
+    if (achievementsData) setAchievements(achievementsData as Achievement[]);
+  }, []);
+
+  const refreshSystemConfig = useCallback(async () => {
+    await fetchSystemConfig();
+  }, [fetchSystemConfig]);
+
   useEffect(() => {
     // Race the session check with a timeout so the app never hangs on a blank screen
     const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
@@ -114,6 +165,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchProfile(session.user.id);
         fetchSubjects(session.user.id);
         fetchDevelopers();
+        fetchSystemConfig();
         setView({ type: 'home' });
       }
     });
@@ -131,22 +183,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchProfile(session.user.id);
         fetchSubjects(session.user.id);
         fetchDevelopers();
+        fetchSystemConfig();
         setView({ type: 'home' });
       } else {
         setUserId(null);
         setProfile(null);
         setSubjects([]);
         setDevelopers([]);
+        setBranches([]);
+        setColleges([]);
+        setAcademicYears([]);
+        setAchievements([]);
         setView({ type: 'auth' });
       }
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [fetchProfile, fetchSubjects, fetchDevelopers]);
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  }, [fetchProfile, fetchSubjects, fetchDevelopers, fetchSystemConfig]);
 
   const navigate = (v: AppView) => {
     // Security: Prevent unauthorized access to admin view
@@ -165,8 +218,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loading,
         subjects,
         developers,
+        branches,
+        colleges,
+        academicYears,
+        achievements,
         refreshSubjects,
         refreshDevelopers,
+        refreshSystemConfig,
         view,
         navigate,
         signOut,

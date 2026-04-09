@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2, Plus, X, Users, BookOpen, Settings, Code } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Users, BookOpen, Settings, Code, ChevronDown, ChevronRight } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 import type { Developer } from '@/types';
@@ -17,16 +17,70 @@ interface UserData {
   created_at: string;
 }
 
+interface University {
+  id: string;
+  name: string;
+  location?: string;
+  emoji: string;
+  color: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface UniversitySubject {
+  id: string;
+  university_id: string;
+  name: string;
+  icon: string;
+  color: string;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface UniversityModule {
+  id: string;
+  university_subject_id: string;
+  name: string;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface UniversityTopic {
+  id: string;
+  university_module_id: string;
+  name: string;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+}
+
 export const Admin: React.FC = () => {
   const { navigate, isAdmin } = useApp();
   const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'developers' | 'settings'>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [subjects, setSubjects] = useState<UniversitySubject[]>([]);
+  const [modules, setModules] = useState<UniversityModule[]>([]);
+  const [topics, setTopics] = useState<UniversityTopic[]>([]);
   const [loading, setLoading] = useState(true);
   const [devFormOpen, setDevFormOpen] = useState(false);
   const [newDeveloper, setNewDeveloper] = useState<Partial<Developer>>({
     skills: [],
   });
+
+  // Template management state
+  const [expandedUniv, setExpandedUniv] = useState<string | null>(null);
+  const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
+  const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  const [unirForm, setUnivForm] = useState(false);
+  const [newUniv, setNewUniv] = useState({ name: '', location: '', emoji: '🎓', color: '#6366f1' });
+  const [newSubj, setNewSubj] = useState({ name: '', icon: '📘', color: '#06b6d4' });
+  const [newMod, setNewMod] = useState({ name: '' });
+  const [newTopic, setNewTopic] = useState({ name: '' });
 
   // Security check: If user is not admin, show access denied
   if (!isAdmin) {
@@ -54,6 +108,7 @@ export const Admin: React.FC = () => {
   useEffect(() => {
     fetchUsers();
     fetchDevelopers();
+    fetchUniversities();
   }, []);
 
   const fetchUsers = async () => {
@@ -75,6 +130,161 @@ export const Admin: React.FC = () => {
       .select('*')
       .order('created_at', { ascending: true });
     if (data) setDevelopers(data as Developer[]);
+  };
+
+  // ─── Template Management Functions ──────────────────────
+  const fetchUniversities = async () => {
+    const { data } = await supabase
+      .from('universities')
+      .select('*')
+      .order('created_at', { ascending: true });
+    if (data) setUniversities(data as University[]);
+  };
+
+  const fetchSubjects = async (univId: string) => {
+    const { data } = await supabase
+      .from('university_subjects')
+      .select('*')
+      .eq('university_id', univId)
+      .order('order_index', { ascending: true });
+    if (data) setSubjects(data as UniversitySubject[]);
+  };
+
+  const fetchModules = async (subjId: string) => {
+    const { data } = await supabase
+      .from('university_modules')
+      .select('*')
+      .eq('university_subject_id', subjId)
+      .order('order_index', { ascending: true });
+    if (data) setModules(data as UniversityModule[]);
+  };
+
+  const fetchTopics = async (modId: string) => {
+    const { data } = await supabase
+      .from('university_topics')
+      .select('*')
+      .eq('university_module_id', modId)
+      .order('order_index', { ascending: true });
+    if (data) setTopics(data as UniversityTopic[]);
+  };
+
+  const addUniversity = async () => {
+    if (!newUniv.name) {
+      alert('University name is required');
+      return;
+    }
+    try {
+      await supabase.from('universities').insert({
+        name: newUniv.name,
+        location: newUniv.location,
+        emoji: newUniv.emoji,
+        color: newUniv.color,
+        is_active: true,
+      });
+      setNewUniv({ name: '', location: '', emoji: '🎓', color: '#6366f1' });
+      setUnivForm(false);
+      fetchUniversities();
+    } catch (error) {
+      console.error('Error adding university:', error);
+    }
+  };
+
+  const addSubject = async (univId: string) => {
+    if (!newSubj.name) {
+      alert('Subject name is required');
+      return;
+    }
+    try {
+      await supabase.from('university_subjects').insert({
+        university_id: univId,
+        name: newSubj.name,
+        icon: newSubj.icon,
+        color: newSubj.color,
+        order_index: subjects.length,
+        is_active: true,
+      });
+      setNewSubj({ name: '', icon: '📘', color: '#06b6d4' });
+      fetchSubjects(univId);
+    } catch (error) {
+      console.error('Error adding subject:', error);
+    }
+  };
+
+  const addModule = async (subjId: string) => {
+    if (!newMod.name) {
+      alert('Module name is required');
+      return;
+    }
+    try {
+      await supabase.from('university_modules').insert({
+        university_subject_id: subjId,
+        name: newMod.name,
+        order_index: modules.length,
+        is_active: true,
+      });
+      setNewMod({ name: '' });
+      fetchModules(subjId);
+    } catch (error) {
+      console.error('Error adding module:', error);
+    }
+  };
+
+  const addTopic = async (modId: string) => {
+    if (!newTopic.name) {
+      alert('Topic name is required');
+      return;
+    }
+    try {
+      await supabase.from('university_topics').insert({
+        university_module_id: modId,
+        name: newTopic.name,
+        order_index: topics.length,
+        is_active: true,
+      });
+      setNewTopic({ name: '' });
+      fetchTopics(modId);
+    } catch (error) {
+      console.error('Error adding topic:', error);
+    }
+  };
+
+  const deleteUniversity = async (id: string) => {
+    if (!confirm('Delete this university? All subjects, modules, and topics will be deleted.')) return;
+    try {
+      await supabase.from('universities').delete().eq('id', id);
+      fetchUniversities();
+    } catch (error) {
+      console.error('Error deleting university:', error);
+    }
+  };
+
+  const deleteSubject = async (id: string, univId: string) => {
+    if (!confirm('Delete this subject? All modules and topics will be deleted.')) return;
+    try {
+      await supabase.from('university_subjects').delete().eq('id', id);
+      fetchSubjects(univId);
+    } catch (error) {
+      console.error('Error deleting subject:', error);
+    }
+  };
+
+  const deleteModule = async (id: string, subjId: string) => {
+    if (!confirm('Delete this module? All topics will be deleted.')) return;
+    try {
+      await supabase.from('university_modules').delete().eq('id', id);
+      fetchModules(subjId);
+    } catch (error) {
+      console.error('Error deleting module:', error);
+    }
+  };
+
+  const deleteTopic = async (id: string, modId: string) => {
+    try {
+      await supabase.from('university_topics').delete().eq('id', id);
+      fetchTopics(modId);
+    } catch (error) {
+      console.error('Error deleting topic:', error);
+    }
   };
 
   const addDeveloper = async () => {
@@ -237,41 +447,264 @@ export const Admin: React.FC = () => {
 
       {/* Templates Tab */}
       {activeTab === 'templates' && (
-        <div className="rounded-2xl p-4"
+        <div className="rounded-2xl p-4 space-y-3"
           style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-semibold">University Templates</h3>
             <button
+              onClick={() => setUnivForm(!unirForm)}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200"
               style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
               <Plus className="w-4 h-4" />
-              Add Template
+              Add University
             </button>
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl"
+
+          {/* Add University Form */}
+          {unirForm && (
+            <div className="p-3 rounded-xl space-y-2"
               style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <div>
-                <p className="text-white font-semibold">🎓 VIT Vellore</p>
-                <p className="text-slate-500 text-xs">4 subjects • 24 modules • 150+ topics</p>
+              <input
+                type="text"
+                placeholder="University name"
+                value={newUniv.name}
+                onChange={(e) => setNewUniv({ ...newUniv, name: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+              />
+              <input
+                type="text"
+                placeholder="Location"
+                value={newUniv.location}
+                onChange={(e) => setNewUniv({ ...newUniv, location: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Emoji"
+                  maxLength={2}
+                  value={newUniv.emoji}
+                  onChange={(e) => setNewUniv({ ...newUniv, emoji: e.target.value })}
+                  className="w-20 px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
+                />
+                <input
+                  type="color"
+                  value={newUniv.color}
+                  onChange={(e) => setNewUniv({ ...newUniv, color: e.target.value })}
+                  className="w-20 px-2 py-2 rounded-lg cursor-pointer"
+                />
               </div>
               <div className="flex gap-2">
                 <button
-                  className="p-2 rounded-lg transition-all duration-200 hover:bg-indigo-500/20"
-                  style={{ background: 'rgba(99,102,241,0.2)' }}>
-                  <Edit2 className="w-4 h-4 text-indigo-400" />
+                  onClick={addUniversity}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>
+                  Add
                 </button>
                 <button
-                  className="p-2 rounded-lg transition-all duration-200 hover:bg-red-500/20"
-                  style={{ background: 'rgba(239,68,68,0.1)' }}>
-                  <Trash2 className="w-4 h-4 text-red-500" />
+                  onClick={() => setUnivForm(false)}
+                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-400"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  Cancel
                 </button>
               </div>
             </div>
-          </div>
-          <p className="text-slate-500 text-xs mt-4 text-center">
-            Edit template functionality coming soon. Edit data in src/data/templates.ts
-          </p>
+          )}
+
+          {/* Universities List */}
+          {universities.length === 0 ? (
+            <div className="text-center py-8 text-slate-500">No universities yet</div>
+          ) : (
+            universities.map((univ) => (
+              <div key={univ.id} className="rounded-xl overflow-hidden"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                
+                {/* University Header */}
+                <button
+                  onClick={() => {
+                    setExpandedUniv(expandedUniv === univ.id ? null : univ.id);
+                    if (expandedUniv !== univ.id) fetchSubjects(univ.id);
+                  }}
+                  className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-all"
+                  style={{ background: univ.color + '20' }}>
+                  <div className="flex items-center gap-3">
+                    {expandedUniv === univ.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                    <span className="text-2xl">{univ.emoji}</span>
+                    <div className="text-left">
+                      <p className="text-white font-semibold">{univ.name}</p>
+                      <p className="text-slate-500 text-xs">{univ.location || 'No location'}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteUniversity(univ.id);
+                      }}
+                      className="p-1.5 rounded-lg transition-all hover:bg-red-500/20"
+                      style={{ background: 'rgba(239,68,68,0.1)' }}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
+                </button>
+
+                {/* Subjects Section */}
+                {expandedUniv === univ.id && (
+                  <div className="p-3 space-y-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+                    {subjects.map((subj) => (
+                      <div key={subj.id} className="rounded-lg p-2"
+                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        
+                        {/* Subject Header */}
+                        <button
+                          onClick={() => {
+                            setExpandedSubject(expandedSubject === subj.id ? null : subj.id);
+                            if (expandedSubject !== subj.id) fetchModules(subj.id);
+                          }}
+                          className="w-full flex items-center justify-between p-2 hover:bg-white/5 rounded transition-all"
+                          style={{ background: subj.color + '15' }}>
+                          <div className="flex items-center gap-2">
+                            {expandedSubject === subj.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            <span className="text-lg">{subj.icon}</span>
+                            <p className="text-white font-medium text-sm">{subj.name}</p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteSubject(subj.id, univ.id);
+                            }}
+                            className="p-1 rounded transition-all hover:bg-red-500/20 text-xs">
+                            <Trash2 className="w-3 h-3 text-red-500" />
+                          </button>
+                        </button>
+
+                        {/* Modules Section */}
+                        {expandedSubject === subj.id && (
+                          <div className="ml-6 mt-2 space-y-1">
+                            {modules.map((mod) => (
+                              <div key={mod.id} className="rounded p-1.5"
+                                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                
+                                {/* Module Header */}
+                                <button
+                                  onClick={() => {
+                                    setExpandedModule(expandedModule === mod.id ? null : mod.id);
+                                    if (expandedModule !== mod.id) fetchTopics(mod.id);
+                                  }}
+                                  className="w-full flex items-center justify-between p-1.5 hover:bg-white/5 rounded transition-all text-sm">
+                                  <div className="flex items-center gap-2">
+                                    {expandedModule === mod.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                    <p className="text-slate-300">{mod.name}</p>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteModule(mod.id, subj.id);
+                                    }}
+                                    className="p-0.5 rounded transition-all hover:bg-red-500/20">
+                                    <Trash2 className="w-3 h-3 text-red-500" />
+                                  </button>
+                                </button>
+
+                                {/* Topics Section */}
+                                {expandedModule === mod.id && (
+                                  <div className="ml-4 mt-1 space-y-0.5">
+                                    {topics.length === 0 && (
+                                      <p className="text-slate-600 text-xs ml-2">No topics</p>
+                                    )}
+                                    {topics.map((topic) => (
+                                      <div key={topic.id} className="flex items-center justify-between p-1 rounded text-xs"
+                                        style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                        <p className="text-slate-400">• {topic.name}</p>
+                                        <button
+                                          onClick={() => deleteTopic(topic.id, mod.id)}
+                                          className="p-0 rounded hover:bg-red-500/20">
+                                          <X className="w-2.5 h-2.5 text-red-500" />
+                                        </button>
+                                      </div>
+                                    ))}
+
+                                    {/* Add Topic Form */}
+                                    <div className="ml-2 mt-1 flex gap-1">
+                                      <input
+                                        type="text"
+                                        placeholder="Add topic"
+                                        value={newTopic.name}
+                                        onChange={(e) => setNewTopic({ name: e.target.value })}
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') {
+                                            addTopic(mod.id);
+                                          }
+                                        }}
+                                        className="flex-1 px-2 py-1 rounded text-xs text-white bg-slate-700/50"
+                                      />
+                                      <button
+                                        onClick={() => addTopic(mod.id)}
+                                        className="px-2 py-1 rounded text-xs font-semibold text-white"
+                                        style={{ background: '#10b981' }}>
+                                        Add
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+
+                            {/* Add Module Form */}
+                            <div className="ml-4 flex gap-1 mt-1">
+                              <input
+                                type="text"
+                                placeholder="New module"
+                                value={newMod.name}
+                                onChange={(e) => setNewMod({ name: e.target.value })}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') {
+                                    addModule(subj.id);
+                                  }
+                                }}
+                                className="flex-1 px-2 py-1 rounded text-xs text-white bg-slate-700/50"
+                              />
+                              <button
+                                onClick={() => addModule(subj.id)}
+                                className="px-2 py-1 rounded text-xs font-semibold text-white"
+                                style={{ background: '#6366f1' }}>
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add Subject Form */}
+                    <div className="flex gap-2 p-2">
+                      <input
+                        type="text"
+                        placeholder="Subject name"
+                        value={newSubj.name}
+                        onChange={(e) => setNewSubj({ ...newSubj, name: e.target.value })}
+                        className="flex-1 px-3 py-1.5 rounded-lg text-xs text-white bg-slate-700/50"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Icon"
+                        maxLength={2}
+                        value={newSubj.icon}
+                        onChange={(e) => setNewSubj({ ...newSubj, icon: e.target.value })}
+                        className="w-12 px-2 py-1.5 rounded-lg text-xs text-white bg-slate-700/50"
+                      />
+                      <button
+                        onClick={() => addSubject(univ.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                        style={{ background: '#34d399' }}>
+                        Add Subject
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       )}
 

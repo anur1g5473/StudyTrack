@@ -11,16 +11,7 @@ const formatTime = (minutes: number) => {
   return `${h}h ${m}m`;
 };
 
-// ── Predefined options ──────────────────────────────────────
-const YEAR_OPTIONS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
-const BRANCH_OPTIONS = ['CSE', 'ECE', 'EEE', 'IT', 'Mechanical', 'Civil', 'Chemical', 'Other'];
-const COLLEGE_OPTIONS = [
-  'VIT Vellore', 'VIT Chennai', 'VIT AP', 'VIT Bhopal',
-  'BITS Pilani', 'BITS Goa', 'BITS Hyderabad',
-  'IIT Madras', 'IIT Bombay', 'IIT Delhi',
-  'NIT Trichy', 'NIT Warangal', 'NIT Surathkal',
-  'Anna University', 'SRM', 'Amrita', 'Other',
-];
+// ── No more hardcoded options - will come from database! ──
 
 // ── Chip selector (used for year, branch, college) ──────────
 interface ChipSelectorProps {
@@ -81,7 +72,12 @@ const ChipSelector: React.FC<ChipSelectorProps> = ({
 
 // ── Main Profile component ───────────────────────────────────
 export const Profile: React.FC = () => {
-  const { profile, subjects, signOut, userId, refreshProfile, navigate } = useApp();
+  const { profile, subjects, signOut, userId, refreshProfile, navigate, branches, colleges, academicYears, achievements: dbAchievements } = useApp();
+
+  // ── Dynamic options from database ───────────────────────────
+  const YEAR_OPTIONS = academicYears.map(y => y.display_name);
+  const BRANCH_OPTIONS = [...branches.map(b => b.name), 'Other'];
+  const COLLEGE_OPTIONS = [...colleges.map(c => c.name), 'Other'];
 
   const totalTopics = subjects.reduce((sum, s) => sum + (s.total_topics ?? 0), 0);
   const completedTopics = subjects.reduce((sum, s) => sum + (s.completed_topics ?? 0), 0);
@@ -102,12 +98,14 @@ export const Profile: React.FC = () => {
   const openEdit = () => {
     setFullName(profile?.full_name ?? '');
     const b = profile?.branch ?? '';
-    setBranch(BRANCH_OPTIONS.slice(0,-1).includes(b) ? b : b ? 'Other' : '');
-    setCustomBranch(BRANCH_OPTIONS.slice(0,-1).includes(b) ? '' : b);
+    const branchNames = branches.map(br => br.name);
+    setBranch(branchNames.includes(b) ? b : b ? 'Other' : '');
+    setCustomBranch(branchNames.includes(b) ? '' : b);
     setYear(profile?.college_year ?? '');
     const c = profile?.college_name ?? '';
-    setCollege(COLLEGE_OPTIONS.slice(0,-1).includes(c) ? c : c ? 'Other' : '');
-    setCustomCollege(COLLEGE_OPTIONS.slice(0,-1).includes(c) ? '' : c);
+    const collegeNames = colleges.map(col => col.name);
+    setCollege(collegeNames.includes(c) ? c : c ? 'Other' : '');
+    setCustomCollege(collegeNames.includes(c) ? '' : c);
     setEditing(true);
   };
 
@@ -132,14 +130,38 @@ export const Profile: React.FC = () => {
   const displayCollege = profile?.college_name  || '—';
   const displayName    = profile?.full_name     || profile?.reg_no || '—';
 
-  const achievements = [
-    { title: 'First Step',      desc: 'Add your first subject',           emoji: '📘', unlocked: subjects.length >= 1 },
-    { title: 'Getting Serious', desc: 'Complete 5 topics',                emoji: '⭐', unlocked: completedTopics >= 5 },
-    { title: 'Week Warrior',    desc: 'Maintain a 7-day streak',          emoji: '🔥', unlocked: (profile?.streak_days ?? 0) >= 7 },
-    { title: 'Study Marathon',  desc: 'Log 10+ hours total',              emoji: '⏱', unlocked: (profile?.total_study_minutes ?? 0) >= 600 },
-    { title: 'Half Way There',  desc: 'Reach 50% overall progress',       emoji: '🎯', unlocked: overallPct >= 50 },
-    { title: 'Exam Ready',      desc: 'Complete all topics in a subject',  emoji: '🏆', unlocked: subjects.some((s) => s.total_topics && s.total_topics > 0 && s.completed_topics === s.total_topics) },
-  ];
+  // ── Compute achievements from database or fallback to defaults ──
+  const achievements = dbAchievements && dbAchievements.length > 0 
+    ? dbAchievements.map(a => {
+        let unlocked = false;
+        if (a.condition_type === 'subjects_added') {
+          unlocked = subjects.length >= (a.condition_value ?? 1);
+        } else if (a.condition_type === 'topics_completed') {
+          unlocked = completedTopics >= (a.condition_value ?? 5);
+        } else if (a.condition_type === 'streak_days') {
+          unlocked = (profile?.streak_days ?? 0) >= (a.condition_value ?? 7);
+        } else if (a.condition_type === 'study_hours') {
+          unlocked = (profile?.total_study_minutes ?? 0) >= ((a.condition_value ?? 10) * 60);
+        } else if (a.condition_type === 'progress_percent') {
+          unlocked = overallPct >= (a.condition_value ?? 50);
+        } else if (a.condition_type === 'subject_completion') {
+          unlocked = subjects.some((s) => s.total_topics && s.total_topics > 0 && s.completed_topics === s.total_topics);
+        }
+        return {
+          title: a.title,
+          desc: a.description,
+          emoji: a.emoji,
+          unlocked,
+        };
+      })
+    : [
+        { title: 'First Step',      desc: 'Add your first subject',           emoji: '📘', unlocked: subjects.length >= 1 },
+        { title: 'Getting Serious', desc: 'Complete 5 topics',                emoji: '⭐', unlocked: completedTopics >= 5 },
+        { title: 'Week Warrior',    desc: 'Maintain a 7-day streak',          emoji: '🔥', unlocked: (profile?.streak_days ?? 0) >= 7 },
+        { title: 'Study Marathon',  desc: 'Log 10+ hours total',              emoji: '⏱', unlocked: (profile?.total_study_minutes ?? 0) >= 600 },
+        { title: 'Half Way There',  desc: 'Reach 50% overall progress',       emoji: '🎯', unlocked: overallPct >= 50 },
+        { title: 'Exam Ready',      desc: 'Complete all topics in a subject',  emoji: '🏆', unlocked: subjects.some((s) => s.total_topics && s.total_topics > 0 && s.completed_topics === s.total_topics) },
+      ];
 
   const statItems = [
     { icon: Clock,    color: '#6366f1', bg: 'rgba(99,102,241,0.12)',   value: formatTime(profile?.total_study_minutes ?? 0), label: 'Study Time' },

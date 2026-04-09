@@ -65,6 +65,52 @@ export interface Developer {
   updated_at: string;
 }
 
+export interface Branch {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  is_active: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface College {
+  id: string;
+  name: string;
+  location?: string;
+  state?: string;
+  country?: string;
+  is_active: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AcademicYear {
+  id: string;
+  name: string;
+  display_name: string;
+  order_index: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  emoji: string;
+  condition_type: string; // 'subjects_count', 'topics_completed', 'streak_days', 'total_minutes', 'progress_percent', etc.
+  condition_value: number;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface StudySession {
   id: string;
   user_id: string;
