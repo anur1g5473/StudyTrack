@@ -1,0 +1,336 @@
+import React, { useState } from 'react';
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
+import { supabase } from '@/lib/supabase';
+import { UNIVERSITY_TEMPLATES } from '@/data/templates';
+import type { UniversityTemplate } from '@/data/templates';
+
+// ── University card ──────────────────────────────────────────
+const UniversityCard: React.FC<{
+  template: UniversityTemplate;
+  onSelect: () => void;
+}> = ({ template, onSelect }) => (
+  <button
+    onClick={onSelect}
+    className="w-full text-left rounded-2xl p-5 transition-all duration-200 active:scale-98"
+    style={{
+      background: `${template.color}0d`,
+      border: `1px solid ${template.color}30`,
+    }}
+    onMouseEnter={(e) => e.currentTarget.style.border = `1px solid ${template.color}60`}
+    onMouseLeave={(e) => e.currentTarget.style.border = `1px solid ${template.color}30`}
+  >
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
+        style={{ background: `${template.color}18`, border: `1px solid ${template.color}30` }}>
+        {template.emoji}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white font-bold text-base">{template.name}</p>
+        <p className="text-slate-500 text-sm mt-0.5">{template.location}</p>
+        <div className="flex items-center gap-3 mt-2">
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: `${template.color}18`, color: template.color }}>
+            {template.subjects.length} subjects
+          </span>
+          <span className="text-slate-600 text-xs">
+            {template.subjects.reduce((s, sub) => s + sub.modules.length, 0)} modules •{' '}
+            {template.subjects.reduce((s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0)} topics
+          </span>
+        </div>
+      </div>
+      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+        style={{ background: `${template.color}18`, color: template.color }}>
+        <ChevronDown className="w-4 h-4" style={{ transform: 'rotate(-90deg)' }} />
+      </div>
+    </div>
+  </button>
+);
+
+// ── Subject picker for a chosen university ───────────────────
+const SubjectPicker: React.FC<{
+  template: UniversityTemplate;
+  onBack: () => void;
+  onDone: () => void;
+}> = ({ template, onBack, onDone }) => {
+  const { userId, refreshSubjects } = useApp();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [adding, setAdding] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const toggle = (i: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+
+  const toggleExpand = (i: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(i) ? next.delete(i) : next.add(i);
+      return next;
+    });
+
+  const selectAll = () => setSelected(new Set(template.subjects.map((_, i) => i)));
+  const clearAll  = () => setSelected(new Set());
+
+  const handleAdd = async () => {
+    if (!userId || selected.size === 0) return;
+    setAdding(true);
+
+    for (const idx of Array.from(selected)) {
+      const sub = template.subjects[idx];
+
+      // 1. Insert subject
+      const { data: subjectRow, error: subErr } = await supabase
+        .from('subjects')
+        .insert({ user_id: userId, name: sub.name, icon: sub.icon, color: sub.color })
+        .select()
+        .single();
+
+      if (subErr || !subjectRow) continue;
+
+      // 2. Insert modules + topics
+      for (const mod of sub.modules) {
+        const { data: moduleRow, error: modErr } = await supabase
+          .from('modules')
+          .insert({ subject_id: subjectRow.id, user_id: userId, name: mod.name })
+          .select()
+          .single();
+
+        if (modErr || !moduleRow) continue;
+
+        if (mod.topics.length > 0) {
+          await supabase.from('topics').insert(
+            mod.topics.map((t) => ({
+              module_id: moduleRow.id,
+              user_id: userId,
+              name: t,
+            }))
+          );
+        }
+      }
+    }
+
+    await refreshSubjects();
+    setAdding(false);
+    setDone(true);
+  };
+
+  if (done) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-16">
+        <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{ background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', boxShadow: '0 0 30px rgba(52,211,153,0.2)' }}>
+          <Check className="w-10 h-10 text-emerald-400" />
+        </div>
+        <div className="text-center">
+          <p className="text-white text-xl font-bold">{selected.size} subject{selected.size > 1 ? 's' : ''} added!</p>
+          <p className="text-slate-500 text-sm mt-1">All modules and topics are ready.</p>
+        </div>
+        <button
+          onClick={onDone}
+          className="font-bold px-8 py-3.5 rounded-2xl text-white transition-all"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 8px 25px rgba(99,102,241,0.4)' }}
+        >
+          Go to Subjects →
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-white font-bold text-lg">{template.emoji} {template.name}</h2>
+          <p className="text-slate-500 text-xs">Choose subjects to add</p>
+        </div>
+      </div>
+
+      {/* Select all / clear */}
+      <div className="flex items-center justify-between">
+        <span className="text-slate-500 text-sm">
+          {selected.size} of {template.subjects.length} selected
+        </span>
+        <div className="flex gap-2">
+          <button onClick={selectAll} className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+            style={{ background: 'rgba(99,102,241,0.14)', color: '#818cf8' }}>
+            All
+          </button>
+          <button onClick={clearAll} className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748b' }}>
+            Clear
+          </button>
+        </div>
+      </div>
+
+      {/* Subject list */}
+      <div className="space-y-3">
+        {template.subjects.map((sub, idx) => {
+          const isSelected = selected.has(idx);
+          const isExpanded = expanded.has(idx);
+          const topicCount = sub.modules.reduce((s, m) => s + m.topics.length, 0);
+
+          return (
+            <div key={idx} className="rounded-2xl overflow-hidden transition-all duration-200"
+              style={{
+                background: isSelected ? `${sub.color}0d` : 'rgba(255,255,255,0.02)',
+                border: isSelected ? `1px solid ${sub.color}45` : '1px solid rgba(255,255,255,0.07)',
+              }}>
+              {/* Subject row */}
+              <div className="flex items-center gap-3 p-4">
+                {/* Checkbox */}
+                <button
+                  onClick={() => toggle(idx)}
+                  className="w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all duration-200"
+                  style={isSelected ? {
+                    background: sub.color,
+                    borderColor: sub.color,
+                    boxShadow: `0 0 12px ${sub.color}55`,
+                  } : {
+                    borderColor: 'rgba(255,255,255,0.15)',
+                  }}
+                >
+                  {isSelected && <Check className="w-4 h-4 text-white" />}
+                </button>
+
+                {/* Icon + info */}
+                <button
+                  onClick={() => toggleExpand(idx)}
+                  className="flex-1 flex items-center gap-3 text-left min-w-0"
+                >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
+                    style={{ background: `${sub.color}18` }}>
+                    {sub.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">{sub.name}</p>
+                    <p className="text-slate-600 text-xs mt-0.5">
+                      {sub.modules.length} modules • {topicCount} topics
+                    </p>
+                  </div>
+                  {isExpanded
+                    ? <ChevronUp className="w-4 h-4 text-slate-600 shrink-0" />
+                    : <ChevronDown className="w-4 h-4 text-slate-600 shrink-0" />}
+                </button>
+              </div>
+
+              {/* Expanded module preview */}
+              {isExpanded && (
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  {sub.modules.map((mod, mi) => (
+                    <div key={mi} className="px-4 py-2.5"
+                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <p className="text-slate-300 text-xs font-semibold mb-1.5">{mod.name}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {mod.topics.slice(0, 4).map((t, ti) => (
+                          <span key={ti} className="text-[10px] px-2 py-0.5 rounded-full text-slate-500"
+                            style={{ background: 'rgba(255,255,255,0.04)' }}>
+                            {t}
+                          </span>
+                        ))}
+                        {mod.topics.length > 4 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full"
+                            style={{ background: `${sub.color}18`, color: sub.color }}>
+                            +{mod.topics.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add button */}
+      <div className="sticky bottom-20 pt-2">
+        <button
+          onClick={handleAdd}
+          disabled={selected.size === 0 || adding}
+          className="w-full font-bold py-4 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-40 transition-all duration-200"
+          style={{
+            background: selected.size > 0 ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.05)',
+            color: selected.size > 0 ? 'white' : '#475569',
+            boxShadow: selected.size > 0 ? '0 8px 25px rgba(99,102,241,0.4)' : 'none',
+          }}
+        >
+          {adding
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Adding subjects...</>
+            : <><BookOpen className="w-4 h-4" /> Add {selected.size > 0 ? `${selected.size} ` : ''}Subject{selected.size !== 1 ? 's' : ''}</>}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Templates page ──────────────────────────────────────
+export const Templates: React.FC = () => {
+  const { navigate } = useApp();
+  const [chosenTemplate, setChosenTemplate] = useState<UniversityTemplate | null>(null);
+
+  if (chosenTemplate) {
+    return (
+      <SubjectPicker
+        template={chosenTemplate}
+        onBack={() => setChosenTemplate(null)}
+        onDone={() => navigate({ type: 'subjects' })}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 pb-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => navigate({ type: 'subjects' })}
+          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h2 className="text-white font-bold text-lg flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-yellow-400" /> University Templates
+          </h2>
+          <p className="text-slate-500 text-xs">Pick your university and add subjects instantly</p>
+        </div>
+      </div>
+
+      {/* Banner */}
+      <div className="rounded-2xl p-4"
+        style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
+        <p className="text-slate-300 text-sm leading-relaxed">
+          Select your university below, choose which subjects to add, and all modules & topics will be created automatically. ✨
+        </p>
+      </div>
+
+      {/* University grid */}
+      <div className="space-y-3">
+        {UNIVERSITY_TEMPLATES.map((t) => (
+          <UniversityCard key={t.id} template={t} onSelect={() => setChosenTemplate(t)} />
+        ))}
+      </div>
+
+      {/* More coming soon */}
+      <div className="rounded-2xl p-4 text-center"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}>
+        <p className="text-slate-600 text-sm">More universities coming soon 🏫</p>
+      </div>
+    </div>
+  );
+};
