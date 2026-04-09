@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Github, Linkedin, Mail, Code } from 'lucide-react';
+import { ArrowLeft, Globe, Mail, Code } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 
 export const Developers: React.FC = () => {
@@ -120,7 +120,7 @@ export const Developers: React.FC = () => {
                       className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-slate-700"
                       style={{ background: 'rgba(255,255,255,0.05)' }}
                       title={`GitHub: ${dev.github_profile}`}>
-                      <Github className="w-4 h-4 text-slate-300" />
+                      <Code className="w-4 h-4 text-slate-300" />
                     </a>
                   )}
                   {dev.linkedin_profile && (
@@ -130,7 +130,7 @@ export const Developers: React.FC = () => {
                       className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-blue-500/20"
                       style={{ background: 'rgba(255,255,255,0.05)' }}
                       title="LinkedIn">
-                      <Linkedin className="w-4 h-4 text-blue-400" />
+                      <Globe className="w-4 h-4 text-blue-400" />
                     </a>
                   )}
                 </div>
