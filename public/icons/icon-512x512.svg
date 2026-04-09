@@ -1,0 +1,37 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bgGradient)" rx="120"/>
+  
+  <!-- Book icon - larger -->
+  <g transform="translate(128, 122)">
+    <!-- Left page -->
+    <rect x="0" y="0" width="106" height="160" fill="#fbbf24" rx="10" opacity="0.95"/>
+    <!-- Right page -->
+    <rect x="118" y="0" width="106" height="160" fill="#fbbf24" rx="10"/>
+    <!-- Spine -->
+    <rect x="101" y="13" width="21" height="134" fill="#f59e0b"/>
+    <!-- Lines on left page -->
+    <line x1="21" y1="40" x2="85" y2="40" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="21" y1="67" x2="85" y2="67" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="21" y1="94" x2="85" y2="94" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="21" y1="121" x2="85" y2="121" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <!-- Lines on right page -->
+    <line x1="139" y1="40" x2="203" y2="40" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="139" y1="67" x2="203" y2="67" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="139" y1="94" x2="203" y2="94" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+    <line x1="139" y1="121" x2="203" y2="121" stroke="#0a0a1a" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Checkmark circle at bottom right -->
+  <g transform="translate(294, 320)">
+    <circle cx="53" cy="53" r="59" fill="#10b981" opacity="0.98"/>
+    <!-- Checkmark -->
+    <path d="M 32 53 L 48 69 L 74 43" stroke="white" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
