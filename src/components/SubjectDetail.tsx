@@ -31,35 +31,28 @@ const AddModuleModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-6 pb-10 shadow-2xl"
-        style={{ background: '#111122', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.15)' }} />
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-bold text-lg">Add Module</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md brutal-box bg-white p-6 shadow-[8px_8px_0px_#000]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6 pb-4 border-b-4 border-black">
+          <h3 className="text-black font-black text-2xl uppercase">ADD MODULE</h3>
+          <button onClick={onClose} className="w-10 h-10 brutal-box bg-brutal-pink flex items-center justify-center hover:bg-red-500 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+            <X className="w-6 h-6 text-black stroke-[3]" />
+          </button>
         </div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="e.g. Module 1 — Introduction"
-          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm placeholder-slate-700 mb-4"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
-          onFocus={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.5)'}
-          onBlur={(e) => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'}
+          placeholder="E.G. INTRO TO MODULE 1"
+          className="w-full px-4 py-3 text-black text-lg font-bold border-4 border-black focus:outline-none focus:ring-4 focus:ring-brutal-green mb-6"
           autoFocus
         />
         <button
           onClick={handleAdd}
           disabled={loading}
-          className="w-full font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', boxShadow: '0 6px 20px rgba(99,102,241,0.35)' }}
+          className="w-full font-black text-xl py-4 flex items-center justify-center gap-2 brutal-btn bg-brutal-yellow text-black hover:bg-[#ffcf00]"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add Module
+          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6 stroke-[3]" />} CREATE MODULE
         </button>
       </div>
     </div>
@@ -84,35 +77,28 @@ const AddTopicModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
-      onClick={onClose}>
-      <div className="w-full max-w-md rounded-t-3xl p-6 pb-10"
-        style={{ background: '#111122', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none' }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'rgba(255,255,255,0.15)' }} />
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-bold text-lg">Add Topic</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md brutal-box bg-white p-6 shadow-[8px_8px_0px_#000]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6 pb-4 border-b-4 border-black">
+          <h3 className="text-black font-black text-2xl uppercase">ADD TOPIC</h3>
+          <button onClick={onClose} className="w-10 h-10 brutal-box bg-brutal-pink flex items-center justify-center hover:bg-red-500 active:translate-y-1 active:translate-x-1 active:shadow-none transition-all">
+             <X className="w-6 h-6 text-black stroke-[3]" />
+          </button>
         </div>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          placeholder="e.g. Binary Trees"
-          className="w-full rounded-2xl px-4 py-3.5 text-white text-sm placeholder-slate-700 mb-4"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
-          onFocus={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.5)'}
-          onBlur={(e) => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.09)'}
+          placeholder="E.G. BINARY TREES"
+          className="w-full px-4 py-3 text-black text-lg font-bold border-4 border-black focus:outline-none focus:ring-4 focus:ring-brutal-blue mb-6"
           autoFocus
         />
         <button
           onClick={handleAdd}
           disabled={loading}
-          className="w-full font-semibold py-3.5 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-60 transition-all"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', boxShadow: '0 6px 20px rgba(99,102,241,0.35)' }}
+          className="w-full font-black text-xl py-4 flex items-center justify-center gap-2 brutal-btn bg-brutal-green text-black hover:bg-[#00ffb5]"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add Topic
+          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6 stroke-[3]" />} CREATE TOPIC
         </button>
       </div>
     </div>
@@ -187,148 +173,162 @@ export const SubjectDetail: React.FC<Props> = ({ subjectId }) => {
   const pct = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0;
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="flex flex-col gap-6 pb-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-start gap-4">
         <button
           onClick={() => navigate({ type: 'subjects' })}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-150 active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+          className="w-14 h-14 brutal-box bg-white flex items-center justify-center shrink-0 active:translate-y-1 active:translate-x-1 active:shadow-none hover:bg-slate-100"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-6 h-6 text-black stroke-[3]" />
         </button>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-white font-bold text-lg truncate">{subject.icon} {subject.name}</h2>
-          <p className="text-slate-500 text-xs">{completedTopics}/{totalTopics} topics • {pct}% done</p>
+        <div className="flex-1 min-w-0 brutal-box p-3 bg-white" style={{ backgroundColor: subject.color }}>
+          <h2 className="text-black font-black text-2xl truncate uppercase" style={{textShadow: '1px 1px 0px #fff'}}>{subject.icon} {subject.name}</h2>
+          <div className="flex justify-between items-center mt-2 bg-white border-2 border-black px-2 py-1 transform -rotate-1">
+             <span className="text-black font-bold text-xs uppercase">{completedTopics}/{totalTopics} TOPICS</span>
+             <span className="text-black font-black text-xs uppercase px-1 bg-brutal-green border-2 border-black">{pct}% DONE</span>
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddModule(true)}
-          className="rounded-xl px-3 py-2 flex items-center gap-1.5 text-sm font-semibold transition-all active:scale-95"
-          style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8' }}
-        >
-          <Plus className="w-4 h-4" /> Module
-        </button>
       </div>
 
-      {/* Progress bar */}
-      <div className="rounded-2xl p-4"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex justify-between text-sm mb-2.5">
-          <span className="text-slate-500 font-medium">Progress</span>
-          <span className="text-white font-bold">{pct}%</span>
-        </div>
-        <div className="w-full rounded-full h-3" style={{ background: 'rgba(255,255,255,0.06)' }}>
-          <div
-            className="h-3 rounded-full transition-all duration-700"
-            style={{ width: `${pct}%`, backgroundColor: subject.color, boxShadow: `0 0 12px ${subject.color}88` }}
-          />
-        </div>
-        <p className="text-slate-600 text-xs mt-1.5">{completedTopics} of {totalTopics} topics completed</p>
+      <div className="flex items-center gap-3">
+         <button
+            onClick={() => setShowAddModule(true)}
+            className="flex-1 brutal-btn bg-brutal-yellow text-black py-4 flex items-center justify-center gap-2 hover:bg-[#ffcf00]"
+         >
+            <Plus className="w-5 h-5 stroke-[3]" /> NEW MODULE
+         </button>
+         
+         {/* Delete Subject Button */}
+         <button
+            onClick={async () => {
+              if (window.confirm(`Are you sure you want to delete ${subject.name}? This will remove all modules and topics inside it permanently.`)) {
+                await supabase.from('subjects').delete().eq('id', subjectId);
+                refreshSubjects();
+                navigate({ type: 'subjects' });
+              }
+            }}
+            className="w-14 h-14 brutal-btn bg-brutal-orange text-white flex items-center justify-center hover:bg-[#ff7b52]"
+            title="Delete Subject"
+         >
+            <Trash2 className="w-6 h-6 stroke-[3]" />
+         </button>
       </div>
 
       {/* Modules */}
       {loading ? (
         <div className="flex justify-center py-10">
-          <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
+          <Loader2 className="w-10 h-10 text-black stroke-[3] animate-spin" />
         </div>
       ) : modules.length === 0 ? (
-        <div className="rounded-2xl p-8 text-center"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}>
-          <p className="text-slate-500">No modules yet. Tap "+ Module" to get started!</p>
+        <div className="brutal-box p-8 text-center bg-brutal-pink border-dashed border-4 border-black">
+          <p className="text-black font-black text-lg uppercase">NO MODULES YET</p>
+          <p className="text-black/80 font-bold text-sm uppercase mt-1">Tap + to craft your first chunk</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-6">
           {modules.map((mod) => {
             const modDone = mod.topics.filter((t) => t.is_completed).length;
+            const modPct = mod.topics.length > 0 ? Math.round((modDone / mod.topics.length)*100) : 0;
             return (
-              <div key={mod.id} className="rounded-2xl overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div key={mod.id} className="brutal-card bg-white overflow-hidden shadow-[6px_6px_0px_#000]">
                 {/* Module header */}
-                <div className="flex items-center gap-3 p-4">
-                  <button
-                    onClick={() => toggleExpand(mod.id)}
-                    className="flex-1 flex items-center gap-3 text-left"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold text-sm">{mod.name}</p>
-                      <p className="text-slate-600 text-xs mt-0.5">{modDone}/{mod.topics.length} done</p>
-                    </div>
-                    {mod.expanded
-                      ? <ChevronUp className="w-4 h-4 text-slate-600 shrink-0" />
-                      : <ChevronDown className="w-4 h-4 text-slate-600 shrink-0" />}
-                  </button>
-                  <button
-                    onClick={() => setAddTopicForModule(mod.id)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                    style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => deleteModule(mod.id)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                    style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                <div className={`p-4 border-b-4 border-black ${mod.expanded ? 'bg-brutal-lilac' : 'bg-slate-50'}`}>
+                   <div className="flex items-center gap-3">
+                     <button onClick={() => toggleExpand(mod.id)} className="flex-1 flex items-center gap-4 text-left">
+                        <div className="w-10 h-10 brutal-box bg-white flex items-center justify-center border-2 border-black">
+                           {mod.expanded ? <ChevronUp className="w-6 h-6 text-black stroke-[3]" /> : <ChevronDown className="w-6 h-6 text-black stroke-[3]" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <p className="text-black font-black text-xl uppercase leading-tight">{mod.name}</p>
+                           <p className="text-black/70 font-bold text-xs uppercase mt-0.5">{modDone}/{mod.topics.length} DONE • {modPct}%</p>
+                        </div>
+                     </button>
+                     <button
+                        onClick={() => toggleExpand(mod.id)}
+                        className={`w-14 h-14 brutal-box flex items-center justify-center shrink-0 border-2 ${modPct===100 ? 'bg-brutal-green' : 'bg-white'}`}
+                     >
+                        <span className="font-black text-sm">{modPct}%</span>
+                     </button>
+                   </div>
                 </div>
 
                 {/* Topics */}
                 {mod.expanded && (
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="bg-white">
                     {mod.topics.length === 0 ? (
-                      <div className="px-4 py-3 text-slate-600 text-sm">No topics yet — tap + to add</div>
+                      <div className="px-6 py-6 text-black font-bold text-sm uppercase text-center border-b-4 border-black border-dashed">
+                        No topics assigned to this module.
+                      </div>
                     ) : (
-                      mod.topics.map((topic) => (
+                      mod.topics.map((topic, i) => (
                         <div
                           key={topic.id}
-                          className="flex items-center gap-3 px-4 py-3.5 group transition-all"
-                          style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          className="flex items-stretch group border-b-4 border-black bg-white hover:bg-brutal-yellow transition-colors"
                         >
-                          {/* Checkbox */}
+                          {/* Checkbox Trigger Area */}
                           <button
                             onClick={() => toggleTopicComplete(topic)}
-                            className="w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all duration-200"
-                            style={topic.is_completed ? {
-                              background: '#10b981',
-                              borderColor: '#10b981',
-                            } : {
-                              borderColor: 'rgba(255,255,255,0.15)',
-                            }}
+                            className={`w-16 flex items-center justify-center border-r-4 border-black shrink-0 transition-colors ${topic.is_completed ? 'bg-brutal-green' : 'bg-slate-100 group-hover:bg-white'}`}
                           >
-                            {topic.is_completed && <Check className="w-3.5 h-3.5 text-white" />}
+                            {topic.is_completed ? (
+                               <Check className="w-8 h-8 text-black stroke-[4]" />
+                            ) : (
+                               <div className="w-6 h-6 border-4 border-black rounded-sm" />
+                            )}
                           </button>
 
-                          {/* Name */}
+                          {/* Name Block */}
                           <button
-                            className="flex-1 text-left min-w-0"
-                            onClick={() =>
-                              navigate({ type: 'topic-detail', topicId: topic.id, moduleId: mod.id, subjectId: subject.id })
-                            }
+                            className="flex-1 text-left p-4 min-w-0 flex flex-col justify-center"
+                            onClick={() => navigate({ type: 'topic-detail', topicId: topic.id, moduleId: mod.id, subjectId: subject.id })}
                           >
-                            <p className={`text-sm truncate ${topic.is_completed ? 'line-through text-slate-600' : 'text-slate-200'}`}>
+                            <p className={`text-lg font-black uppercase truncate ${topic.is_completed ? 'line-through text-black/40' : 'text-black'}`}>
                               {topic.name}
                             </p>
                             {topic.study_minutes > 0 && (
-                              <p className="text-slate-600 text-xs mt-0.5">
-                                ⏱ {Math.floor(topic.study_minutes / 60) > 0 ? `${Math.floor(topic.study_minutes / 60)}h ` : ''}{topic.study_minutes % 60}m studied
+                              <p className="text-black font-bold text-xs mt-1 bg-black/5 px-2 py-0.5 inline-block w-fit border-2 border-black/10">
+                                ⏱ STUDIED: {Math.floor(topic.study_minutes / 60) > 0 ? `${Math.floor(topic.study_minutes / 60)}H ` : ''}{topic.study_minutes % 60}M
                               </p>
                             )}
                           </button>
 
-                          {/* Delete */}
+                          {/* Delete Topic */}
                           <button
                             onClick={() => deleteTopic(topic.id)}
-                            className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center transition-all"
-                            style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171' }}
+                            className="w-14 items-center justify-center border-l-4 border-black bg-brutal-orange text-white hover:bg-[#ff7b52] hidden group-hover:flex"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-5 h-5 stroke-[3]" />
                           </button>
                         </div>
                       ))
                     )}
+                    
+                    {/* Add Topic Action Row */}
+                    <div className="flex bg-slate-100">
+                       <button
+                          onClick={() => setAddTopicForModule(mod.id)}
+                          className="w-20 flex items-center justify-center border-r-4 border-black bg-brutal-blue text-white hover:bg-[#1da2ff]"
+                       >
+                          <Plus className="w-8 h-8 stroke-[3]" />
+                       </button>
+                       <button
+                          onClick={() => setAddTopicForModule(mod.id)}
+                          className="flex-1 text-left p-4 font-black uppercase text-sm text-black/60 hover:text-black transition-colors"
+                       >
+                          ADD NEW TOPIC TO MODULE
+                       </button>
+                       
+                       {/* Delete Module Action */}
+                       <button
+                          onClick={() => {
+                             if(window.confirm('Delete an entire module? Are you absolutely sure?')) deleteModule(mod.id);
+                          }}
+                          className="w-14 flex items-center justify-center border-l-4 border-black bg-slate-200 text-slate-500 hover:bg-brutal-orange hover:text-white transition-colors"
+                       >
+                          <Trash2 className="w-5 h-5 stroke-[3]" />
+                       </button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, ChevronDown } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 import type { Module, Topic } from '@/types';
 
 const PRESETS = [
-  { label: '15m', seconds: 15 * 60 },
-  { label: '25m', seconds: 25 * 60 },
-  { label: '45m', seconds: 45 * 60 },
-  { label: '60m', seconds: 60 * 60 },
+  { label: '15M', seconds: 15 * 60 },
+  { label: '25M', seconds: 25 * 60 },
+  { label: '45M', seconds: 45 * 60 },
+  { label: '60M', seconds: 60 * 60 },
 ];
 
 export const Focus: React.FC = () => {
@@ -125,32 +125,31 @@ export const Focus: React.FC = () => {
   const minutes = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
   const progress = 1 - secondsLeft / totalSeconds;
-  const circumference = 2 * Math.PI * 88;
-
+  
   const selectedSubject = subjects.find((s) => s.id === selectedSubjectId);
   const selectedModule = modules.find((m) => m.id === selectedModuleId);
   const selectedTopic = topics.find((t) => t.id === selectedTopicId);
 
-  const timerColor = finished ? '#10b981' : isRunning ? '#818cf8' : '#334155';
-  const timerGlow = isRunning ? '0 0 40px rgba(129,140,248,0.4)' : 'none';
-
   const selectStyle: React.CSSProperties = {
-    background: 'rgba(0,0,0,0.3)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#cbd5e1',
-    borderRadius: '16px',
+    background: '#fff',
+    border: '3px solid #000',
+    color: '#000',
+    borderRadius: '0px',
     padding: '12px 40px 12px 16px',
     fontSize: '14px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
     width: '100%',
-    appearance: 'none' as const,
-    WebkitAppearance: 'none' as const,
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    boxShadow: '4px 4px 0px #000'
   };
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
-      <div className="text-center">
-        <h2 className="text-white text-xl font-bold tracking-tight">Focus Mode</h2>
-        <p className="text-slate-500 text-sm mt-0.5">Stay in the zone. One task at a time.</p>
+    <div className="flex flex-col gap-6 pb-4">
+      <div className="brutal-box p-4 bg-brutal-blue border-4 border-black text-center shadow-[6px_6px_0px_#000]">
+        <h2 className="text-white text-3xl font-black tracking-tighter uppercase">Focus Tracker</h2>
+        <p className="text-white/80 font-bold text-sm uppercase mt-1">One task. Total lock in.</p>
       </div>
 
       {/* Preset selector */}
@@ -159,84 +158,89 @@ export const Focus: React.FC = () => {
           <button
             key={p.label}
             onClick={() => selectPreset(i)}
-            className="flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-all duration-200"
-            style={selectedPreset === i ? {
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white',
-              boxShadow: '0 4px 15px rgba(99,102,241,0.35)',
-            } : {
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              color: '#64748b',
-            }}
+            className={`flex-1 py-3 text-sm font-black border-2 border-black transition-transform active:translate-y-1 ${
+               selectedPreset === i 
+                 ? 'bg-black text-brutal-yellow shadow-none translate-y-1' 
+                 : 'bg-white text-black shadow-[3px_3px_0px_#000] hover:-translate-y-1 hover:shadow-[4px_6px_0px_#000]'
+            }`}
           >
             {p.label}
           </button>
         ))}
       </div>
 
-      {/* Timer ring */}
-      <div className="flex flex-col items-center">
-        <div className="relative" style={{ filter: isRunning ? 'drop-shadow(0 0 20px rgba(129,140,248,0.35))' : 'none', transition: 'filter 0.5s ease' }}>
-          <svg width="220" height="220" className="-rotate-90">
-            <circle cx="110" cy="110" r="88" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" />
-            <defs>
-              <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={finished ? '#10b981' : '#818cf8'} />
-                <stop offset="100%" stopColor={finished ? '#34d399' : '#a78bfa'} />
-              </linearGradient>
-            </defs>
-            <circle
-              cx="110" cy="110" r="88"
-              fill="none"
-              stroke={progress > 0 ? 'url(#timerGrad)' : timerColor}
-              strokeWidth="10"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - progress)}
-              style={{ transition: 'stroke-dashoffset 1s linear' }}
+      {/* Timer Display block */}
+      <div className="brutal-box overflow-hidden bg-white">
+         <div className="p-8 pb-4 text-center">
+            <span className="text-[5rem] leading-none font-black text-black tabular-nums tracking-tighter drop-shadow-[4px_4px_0_theme(colors.brutal.blue)]" style={{textShadow: '4px 4px 0px #23a0ff'}}>
+               {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </span>
+            <div className="mt-4 flex justify-center">
+               <span className={`px-4 py-1 border-2 border-black font-black uppercase text-xs ${finished ? 'bg-brutal-green' : isRunning ? 'bg-brutal-pink animate-pulse' : 'bg-slate-200'}`}>
+                  {finished ? '🎉 STOPWATCH DONE' : isRunning ? '⏱ LOGGING FOCUS...' : 'AWAITING START'}
+               </span>
+            </div>
+         </div>
+         {/* Brutal progress bar replacing circular ring */}
+         <div className="w-full h-8 border-t-4 border-black bg-slate-200 mt-4 relative overflow-hidden">
+            <div 
+               className={`h-full border-r-4 border-black transition-all duration-1000 ${finished ? 'bg-brutal-green' : 'bg-brutal-blue'}`}
+               style={{ width: `${Math.min(100, progress * 100)}%` }}
             />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-5xl font-bold text-white tabular-nums tracking-tight">
-              {String(minutes).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-            </span>
-            <span className="text-slate-400 text-sm mt-1.5 font-medium">
-              {finished ? '🎉 Session Done!' : isRunning ? '⏱ Focusing...' : 'Ready to start'}
-            </span>
-          </div>
-        </div>
+            {/* Grid pattern overlay on progress bar */}
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iNSIgY3k9IjUiIHI9IjAuNSIgZmlsbD0icmdiYSgwLDAsMCwwLjMpIi8+PC9zdmc+')] opacity-50" />
+         </div>
       </div>
 
-      {/* Subject/topic selection */}
-      <div className="rounded-2xl p-4 space-y-3"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <p className="text-slate-500 text-xs uppercase tracking-widest font-semibold">Currently Studying</p>
+      {/* Controls */}
+      <div className="flex gap-4 items-center">
+        <button
+          onClick={handleReset}
+          className="w-16 h-16 brutal-box bg-white flex items-center justify-center active:translate-y-2 active:translate-x-2 active:shadow-none hover:bg-slate-100 transition-all p-0"
+        >
+          <RotateCcw className="w-8 h-8 text-black" strokeWidth={3} />
+        </button>
+
+        {!isRunning ? (
+          <button
+            onClick={handleStart}
+            className="flex-1 h-16 font-black text-2xl uppercase brutal-box bg-brutal-green text-black flex items-center justify-center gap-2 active:translate-y-2 active:translate-x-2 active:shadow-none hover:bg-[#00ffd6] transition-all"
+          >
+            <Play className="w-8 h-8 fill-black" strokeWidth={3} />
+            {finished ? 'RESTART' : secondsLeft < totalSeconds ? 'RESUME' : 'START NOW'}
+          </button>
+        ) : (
+          <button
+            onClick={handlePause}
+            className="flex-1 h-16 font-black text-2xl uppercase brutal-box bg-brutal-orange text-white flex items-center justify-center gap-2 active:translate-y-2 active:translate-x-2 active:shadow-none hover:bg-[#ff7b52] transition-all"
+          >
+            <Pause className="w-8 h-8 fill-white" strokeWidth={3} />
+            PAUSE
+          </button>
+        )}
+      </div>
+
+      {/* Target selection */}
+      <div className="brutal-box p-5 space-y-4 bg-brutal-yellow">
+        <p className="text-black text-lg font-black uppercase underline decoration-4 underline-offset-4 decoration-black">Session Target</p>
 
         {/* Subject */}
         <div className="relative">
-          <select
-            value={selectedSubjectId}
-            onChange={(e) => setSelectedSubjectId(e.target.value)}
-            disabled={isRunning}
-            style={selectStyle}
-          >
-            <option value="">Select Subject (optional)</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.icon} {s.name}</option>
-            ))}
+          <select value={selectedSubjectId} onChange={(e) => setSelectedSubjectId(e.target.value)} disabled={isRunning} style={selectStyle}>
+            <option value="">SELECT SUBJECT (OPTIONAL)</option>
+            {subjects.map((s) => <option key={s.id} value={s.id}>{s.icon} {s.name}</option>)}
           </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-black pointer-events-none" strokeWidth={3} />
         </div>
 
         {/* Module */}
         {modules.length > 0 && (
           <div className="relative">
             <select value={selectedModuleId} onChange={(e) => setSelectedModuleId(e.target.value)} disabled={isRunning} style={selectStyle}>
-              <option value="">Select Module (optional)</option>
+              <option value="">SELECT MODULE (OPTIONAL)</option>
               {modules.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-black pointer-events-none" strokeWidth={3} />
           </div>
         )}
 
@@ -244,71 +248,21 @@ export const Focus: React.FC = () => {
         {topics.length > 0 && (
           <div className="relative">
             <select value={selectedTopicId} onChange={(e) => setSelectedTopicId(e.target.value)} disabled={isRunning} style={selectStyle}>
-              <option value="">Select Topic (optional)</option>
+              <option value="">SELECT TOPIC (OPTIONAL)</option>
               {topics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-6 h-6 text-black pointer-events-none" strokeWidth={3} />
           </div>
         )}
 
         {(selectedSubject || selectedModule || selectedTopic) && (
-          <p className="text-xs font-medium px-1" style={{ color: '#818cf8' }}>
-            📍 {[selectedSubject?.name, selectedModule?.name, selectedTopic?.name].filter(Boolean).join(' → ')}
-          </p>
+          <div className="bg-white border-2 border-black px-3 py-2 mt-2 font-bold text-sm text-black flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-brutal-green" />
+            <span className="truncate">
+               {[selectedSubject?.name, selectedModule?.name, selectedTopic?.name].filter(Boolean).join(' → ')}
+            </span>
+          </div>
         )}
-      </div>
-
-      {/* Controls */}
-      <div className="flex gap-3 items-center">
-        <button
-          onClick={handleReset}
-          className="w-13 h-13 rounded-2xl flex items-center justify-center transition-all duration-200 active:scale-90"
-          style={{
-            width: 52, height: 52,
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            color: '#64748b',
-          }}
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
-
-        {!isRunning ? (
-          <button
-            onClick={handleStart}
-            className="flex-1 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-98"
-            style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-              color: 'white',
-              boxShadow: timerGlow || '0 8px 25px rgba(99,102,241,0.4)',
-            }}
-          >
-            <Play className="w-5 h-5 fill-white" />
-            {finished ? 'Restart' : secondsLeft < totalSeconds ? 'Resume' : 'Start Focus'}
-          </button>
-        ) : (
-          <button
-            onClick={handlePause}
-            className="flex-1 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-98"
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-              color: 'white',
-              boxShadow: '0 8px 25px rgba(245,158,11,0.35)',
-            }}
-          >
-            <Pause className="w-5 h-5 fill-white" />
-            Pause
-          </button>
-        )}
-      </div>
-
-      {/* Tip */}
-      <div className="rounded-2xl p-4"
-        style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.15)' }}>
-        <p className="text-violet-300 text-xs font-semibold mb-1">💡 Pomodoro Technique</p>
-        <p className="text-slate-500 text-xs leading-relaxed">
-          Study 25 min → short 5 min break → repeat. After 4 sessions, take a 15-30 min break. Proven to boost focus and retention!
-        </p>
       </div>
     </div>
   );

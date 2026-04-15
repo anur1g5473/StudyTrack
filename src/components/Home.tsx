@@ -9,11 +9,11 @@ const formatTime = (minutes: number) => {
   return `${h}h ${m}m`;
 };
 
-const ProgressBar: React.FC<{ value: number; color?: string }> = ({ value, color = '#6366f1' }) => (
-  <div className="w-full rounded-full h-1.5" style={{ background: 'rgba(255,255,255,0.07)' }}>
+const BrutalProgressBar: React.FC<{ value: number; colorClass?: string; bgColor?: string }> = ({ value, colorClass = 'bg-brutal-green', bgColor = '#fff' }) => (
+  <div className="w-full h-8 border-2 border-black rounded flex overflow-hidden" style={{ background: bgColor }}>
     <div
-      className="h-1.5 rounded-full transition-all duration-700"
-      style={{ width: `${Math.min(100, value)}%`, background: color }}
+      className={`h-full border-r-2 border-black transition-all duration-700 ${colorClass} bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMSIgZmlsbD0icmdiYSgwLDAsMCwwLjMpIi8+PC9zdmc+')]`}
+      style={{ width: `${Math.min(100, value)}%` }}
     />
   </div>
 );
@@ -39,150 +39,111 @@ export const Home: React.FC = () => {
     : 0;
 
   const greetingHour = new Date().getHours();
-  const greeting = greetingHour < 12 ? 'Good Morning' : greetingHour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const greeting = greetingHour < 12 ? 'GOOD MORNING' : greetingHour < 17 ? 'GOOD AFTERNOON' : 'GOOD EVENING';
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="flex flex-col gap-6 pb-4">
+
+      {/* Marquee Banner */}
+      <div className="overflow-hidden border-y-4 border-black bg-brutal-yellow py-2 -mx-4 -mt-4 mb-2 shadow-[0_4px_0_0_rgba(0,0,0,1)]">
+        <div className="animate-marquee">
+          {[...Array(6)].map((_, i) => (
+             <span key={i} className="text-black font-black uppercase text-sm tracking-widest mx-4 whitespace-nowrap">
+               ⚡ EXAM GRID ACTIVE • CRUSH YOUR GOALS • TRACK EVERY MINUTE ⚡
+             </span>
+          ))}
+        </div>
+      </div>
 
       {/* Hero Banner */}
-      <div className="rounded-3xl p-5 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, #312e81 0%, #4c1d95 50%, #1e1b4b 100%)',
-          boxShadow: '0 20px 60px rgba(99,102,241,0.3)',
-          border: '1px solid rgba(139,92,246,0.25)',
-        }}>
-        {/* Decorative circles */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full opacity-15"
-          style={{ background: 'radial-gradient(circle, #818cf8, transparent)' }} />
-
-        <div className="relative">
-          <p className="text-violet-300 text-sm font-medium">{greeting} 👋</p>
-          <h2 className="text-white text-2xl font-bold mt-0.5 tracking-tight">
-            {profile?.reg_no ?? 'Student'}
+      <div className="brutal-box p-5 bg-brutal-blue relative overflow-hidden" style={{ backgroundImage: `radial-gradient(#000 2px, transparent 2px)`, backgroundSize: '16px 16px' }}>
+        <div className="relative z-10 p-4 brutal-box bg-white translate-x-[-10px] translate-y-[-10px] shadow-none">
+          <p className="text-black text-sm font-black uppercase tracking-wider">{greeting}!</p>
+          <h2 className="text-black text-4xl font-black mt-1 tracking-tighter uppercase uppercase">
+            {profile?.reg_no ?? 'STUDENT'}
           </h2>
 
           {/* Stat pills */}
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
-            <div className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
-              <Flame className="w-3.5 h-3.5 text-orange-400" />
-              <span className="text-white text-xs font-semibold">{profile?.streak_days ?? 0}d streak</span>
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
+            <div className="flex items-center gap-2 brutal-btn px-4 py-2 bg-brutal-pink text-black">
+               <Flame className="w-5 h-5" />
+               <span className="text-sm">{profile?.streak_days ?? 0} DAY STREAK</span>
             </div>
-            <div className="flex items-center gap-1.5 rounded-2xl px-3 py-1.5"
-              style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
-              <Clock className="w-3.5 h-3.5 text-blue-300" />
-              <span className="text-white text-xs font-semibold">{formatTime(profile?.total_study_minutes ?? 0)}</span>
+            <div className="flex items-center gap-2 brutal-btn px-4 py-2 bg-brutal-yellow text-black">
+               <Clock className="w-5 h-5" />
+               <span className="text-sm">{formatTime(profile?.total_study_minutes ?? 0)} STUDIED</span>
             </div>
           </div>
 
           {/* Progress */}
-          <div className="mt-4">
-            <div className="flex justify-between text-xs mb-2">
-              <span className="text-violet-200 font-medium">Overall Progress</span>
-              <span className="text-white font-bold">{overallProgress}%</span>
+          <div className="mt-6 border-t-4 border-black pt-4">
+            <div className="flex justify-between text-xs mb-2 items-center">
+              <span className="text-black font-black uppercase">Overall Progress</span>
+              <span className="text-black font-black text-xl bg-brutal-green px-2 py-1 border-2 border-black rotate-3">{overallProgress}%</span>
             </div>
-            <div className="w-full rounded-full h-2.5" style={{ background: 'rgba(255,255,255,0.15)' }}>
-              <div
-                className="h-2.5 rounded-full transition-all duration-700"
-                style={{
-                  width: `${overallProgress}%`,
-                  background: 'linear-gradient(90deg, #34d399, #10b981)',
-                  boxShadow: '0 0 10px rgba(52,211,153,0.5)',
-                }}
-              />
-            </div>
-            <p className="text-violet-300 text-xs mt-1.5">{completedTopics} / {totalTopics} topics completed</p>
+            <BrutalProgressBar value={overallProgress} colorClass="bg-brutal-pink" bgColor="#ffeccf" />
+            <p className="text-black font-bold text-xs mt-2 text-right">{completedTopics} / {totalTopics} TOPICS DONE</p>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-slate-500 text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-yellow-500" /> Quick Actions
+        <h3 className="text-black text-lg font-black uppercase tracking-widest mb-3 flex items-center gap-2 underline decoration-4 decoration-brutal-pink underline-offset-4">
+          <Zap className="w-6 h-6 fill-current" /> QUICK ACTIONS
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <button
             onClick={() => navigate({ type: 'subjects' })}
-            className="rounded-2xl p-4 flex flex-col gap-3 text-left transition-all duration-200 active:scale-95"
-            style={{
-              background: 'rgba(99,102,241,0.08)',
-              border: '1px solid rgba(99,102,241,0.18)',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.18)'}
+            className="brutal-btn p-4 bg-brutal-lilac text-left flex flex-col gap-3 group"
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-              <BookOpen className="w-5 h-5" style={{ color: '#818cf8' }} />
+            <div className="w-12 h-12 brutal-box bg-white flex items-center justify-center group-hover:bg-brutal-yellow transition-colors relative">
+               <BookOpen className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm">Study</p>
-              <p className="text-slate-500 text-xs">Pick a topic</p>
+              <p className="text-black font-black text-xl uppercase">STUDY</p>
+              <p className="text-black/70 font-semibold text-xs uppercase mt-1">Pick a topic</p>
             </div>
           </button>
 
           <button
             onClick={() => navigate({ type: 'focus' })}
-            className="rounded-2xl p-4 flex flex-col gap-3 text-left transition-all duration-200 active:scale-95"
-            style={{
-              background: 'rgba(139,92,246,0.08)',
-              border: '1px solid rgba(139,92,246,0.18)',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.border = '1px solid rgba(139,92,246,0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.border = '1px solid rgba(139,92,246,0.18)'}
+            className="brutal-btn p-4 bg-brutal-green text-left flex flex-col gap-3 group"
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(139,92,246,0.2)', border: '1px solid rgba(139,92,246,0.3)' }}>
-              <Zap className="w-5 h-5" style={{ color: '#a78bfa' }} />
+            <div className="w-12 h-12 brutal-box bg-white flex items-center justify-center group-hover:bg-brutal-pink transition-colors">
+               <Zap className="w-6 h-6 text-black" />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm">Focus</p>
-              <p className="text-slate-500 text-xs">Pomodoro timer</p>
+               <p className="text-black font-black text-xl uppercase">FOCUS</p>
+               <p className="text-black/70 font-semibold text-xs uppercase mt-1">Timer</p>
             </div>
           </button>
 
           <button
             onClick={() => navigate({ type: 'templates' })}
-            className="rounded-2xl p-4 flex flex-col gap-3 text-left transition-all duration-200 active:scale-95"
-            style={{
-              background: 'rgba(34,211,153,0.08)',
-              border: '1px solid rgba(34,211,153,0.18)',
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.border = '1px solid rgba(34,211,153,0.4)'}
-            onMouseLeave={(e) => e.currentTarget.style.border = '1px solid rgba(34,211,153,0.18)'}
+            className="brutal-btn p-4 bg-white text-left flex flex-col gap-3 group"
           >
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(34,211,153,0.2)', border: '1px solid rgba(34,211,153,0.3)' }}>
-              <BookMarked className="w-5 h-5" style={{ color: '#34d399' }} />
+            <div className="w-12 h-12 brutal-box bg-brutal-yellow flex items-center justify-center group-hover:bg-brutal-blue transition-colors">
+               <BookMarked className="w-6 h-6 text-black group-hover:text-white" />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm">Templates</p>
-              <p className="text-slate-500 text-xs">Add from templates</p>
+               <p className="text-black font-black text-lg uppercase">TEMPLATES</p>
+               <p className="text-black/70 font-semibold text-xs uppercase mt-1">Add library</p>
             </div>
           </button>
 
           {isAdmin && (
             <button
-              onClick={() => navigate({ type: 'admin' })}
-              className="rounded-2xl p-4 flex flex-col gap-3 text-left transition-all duration-200 active:scale-95"
-              style={{
-                background: 'rgba(239,68,68,0.08)',
-                border: '1px solid rgba(239,68,68,0.18)',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.border = '1px solid rgba(239,68,68,0.4)'}
-              onMouseLeave={(e) => e.currentTarget.style.border = '1px solid rgba(239,68,68,0.18)'}
+               onClick={() => navigate({ type: 'admin' })}
+               className="brutal-btn p-4 bg-red-500 text-left flex flex-col gap-3 group"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                <Lock className="w-5 h-5" style={{ color: '#ef4444' }} />
-              </div>
-              <div>
-                <p className="text-white font-semibold text-sm">Admin</p>
-                <p className="text-slate-500 text-xs">Manage system</p>
-              </div>
+               <div className="w-12 h-12 brutal-box bg-black flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-white" />
+               </div>
+               <div>
+                  <p className="text-black font-black text-lg uppercase">ADMIN</p>
+                  <p className="text-black/80 font-semibold text-xs uppercase mt-1">Superuser</p>
+               </div>
             </button>
           )}
         </div>
@@ -190,99 +151,82 @@ export const Home: React.FC = () => {
 
       {/* Weak Subject Alert */}
       {weakestSubject && weakPct < 60 && (
-        <button
-          className="w-full rounded-2xl p-4 text-left transition-all duration-200 active:scale-98"
-          onClick={() => navigate({ type: 'subject-detail', subjectId: weakestSubject.id })}
-          style={{
-            background: 'rgba(251,146,60,0.07)',
-            border: '1px solid rgba(251,146,60,0.22)',
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(251,146,60,0.2)' }}>
-              <AlertTriangle className="w-4 h-4 text-orange-400" />
+         <button
+            className="brutal-card w-full p-4 text-left bg-brutal-orange flex items-center gap-4"
+            onClick={() => navigate({ type: 'subject-detail', subjectId: weakestSubject.id })}
+         >
+            <div className="w-12 h-12 brutal-box bg-white flex items-center justify-center shrink-0">
+               <AlertTriangle className="w-6 h-6 text-orange-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-0.5">
-                Needs Attention ⚠️
-              </p>
-              <p className="text-white font-semibold text-sm">
-                {weakestSubject.icon} {weakestSubject.name}
-              </p>
-              <div className="mt-1.5">
-                <ProgressBar value={weakPct} color="#fb923c" />
-                <p className="text-slate-500 text-xs mt-1">{weakPct}% completed</p>
-              </div>
+               <div className="flex items-center justify-between mb-1">
+                  <p className="text-black text-xs font-black uppercase tracking-wider bg-white border-2 border-black px-2 py-0.5 inline-block -rotate-2">
+                     NEEDS ATTENTION ⚠️
+                  </p>
+               </div>
+               <p className="text-black font-black text-xl uppercase truncate mb-2 mt-1">
+                  {weakestSubject.icon} {weakestSubject.name}
+               </p>
+               <BrutalProgressBar value={weakPct} colorClass="bg-brutal-yellow" />
             </div>
-            <ChevronRight className="w-4 h-4 text-orange-400 shrink-0" />
-          </div>
-        </button>
+            <div className="w-10 h-10 brutal-box bg-white flex items-center justify-center shrink-0 rounded-full shadow-none border-2">
+               <ChevronRight className="w-6 h-6 text-black" />
+            </div>
+         </button>
       )}
 
       {/* Subjects Overview */}
       {subjects.length > 0 && (
-        <div className="rounded-2xl p-4"
-          style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-          }}>
-          <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-sm">
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-            Subjects Overview
-          </h3>
-          <div className="space-y-4">
-            {subjects.slice(0, 4).map((s) => {
-              const pct = s.total_topics
-                ? Math.round(((s.completed_topics ?? 0) / s.total_topics) * 100)
-                : 0;
-              return (
-                <button
-                  key={s.id}
-                  className="w-full text-left transition-opacity duration-150 active:opacity-70"
-                  onClick={() => navigate({ type: 'subject-detail', subjectId: s.id })}
-                >
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-slate-300 text-sm font-medium">
-                      {s.icon} {s.name}
-                    </span>
-                    <span className="text-xs font-bold"
-                      style={{ color: pct >= 70 ? '#34d399' : pct >= 40 ? '#818cf8' : '#fb923c' }}>
-                      {pct}%
-                    </span>
-                  </div>
-                  <ProgressBar
-                    value={pct}
-                    color={pct >= 70 ? '#34d399' : pct >= 40 ? '#6366f1' : '#fb923c'}
-                  />
-                </button>
-              );
-            })}
-          </div>
-        </div>
+         <div className="brutal-box p-5 bg-white">
+            <h3 className="text-black font-black text-lg uppercase mb-5 flex items-center gap-2 decoration-brutal-green underline decoration-4 underline-offset-4">
+               <TrendingUp className="w-6 h-6" /> SUBJECTS OVERVIEW
+            </h3>
+            <div className="space-y-4">
+               {subjects.slice(0, 4).map((s) => {
+                  const pct = s.total_topics
+                     ? Math.round(((s.completed_topics ?? 0) / s.total_topics) * 100)
+                     : 0;
+                  // Alternate colors based on index or hash
+                  const colors = ['bg-brutal-blue', 'bg-brutal-green', 'bg-brutal-yellow', 'bg-brutal-pink'];
+                  const colorClass = colors[s.name.length % colors.length];
+
+                  return (
+                     <button
+                        key={s.id}
+                        className="w-full text-left bg-slate-50 border-2 border-black p-3 translate-x-1 translate-y-1 hover:translate-x-0 hover:translate-y-0 transition-transform shadow-[-4px_-4px_0_0_#000]"
+                        onClick={() => navigate({ type: 'subject-detail', subjectId: s.id })}
+                     >
+                        <div className="flex justify-between items-end mb-2">
+                           <span className="text-black text-base font-black uppercase truncate mr-4">
+                              {s.icon} {s.name}
+                           </span>
+                           <span className="text-base font-black border-2 border-black px-2 py-0.5 bg-white drop-shadow-[2px_2px_0_#000] rotate-2">
+                              {pct}%
+                           </span>
+                        </div>
+                        <BrutalProgressBar value={pct} colorClass={colorClass} bgColor="#e2e8f0" />
+                     </button>
+                  );
+               })}
+            </div>
+         </div>
       )}
 
       {/* Empty state */}
       {subjects.length === 0 && (
-        <div className="rounded-2xl p-10 text-center"
-          style={{
-            background: 'rgba(255,255,255,0.02)',
-            border: '1px dashed rgba(255,255,255,0.1)',
-          }}>
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-            <BookOpen className="w-6 h-6 text-indigo-500" />
-          </div>
-          <p className="text-slate-400 font-semibold">No subjects yet</p>
-          <p className="text-slate-600 text-sm mt-1">Add your first subject to get started</p>
-          <button
-            onClick={() => navigate({ type: 'subjects' })}
-            className="mt-4 font-semibold px-6 py-2.5 rounded-xl text-sm text-white transition-all duration-200"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 4px 15px rgba(99,102,241,0.3)' }}
-          >
-            Add Subject
-          </button>
-        </div>
+         <div className="brutal-box p-8 text-center bg-brutal-pink border-dashed border-4">
+            <div className="w-20 h-20 brutal-box bg-white flex items-center justify-center mx-auto mb-6 transform -rotate-6">
+               <BookOpen className="w-10 h-10 text-black" />
+            </div>
+            <p className="text-black font-black text-2xl uppercase mb-2">NO SUBJECTS YET</p>
+            <p className="text-black/80 font-bold text-sm mb-6 uppercase">Time to build your curriculum</p>
+            <button
+               onClick={() => navigate({ type: 'subjects' })}
+               className="brutal-btn bg-white text-black px-8 py-3 text-lg"
+            >
+               ADD SUBJECT
+            </button>
+         </div>
       )}
     </div>
   );

@@ -11,17 +11,17 @@ interface DaySession {
 const formatTime = (minutes: number) => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m}m`;
-  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+  if (h === 0) return `${m}M`;
+  return m === 0 ? `${h}H` : `${h}H ${m}M`;
 };
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 const statCards = [
-  { key: 'time',    icon: Clock,    color: '#6366f1', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.2)' },
-  { key: 'streak',  icon: Flame,    color: '#fb923c', bg: 'rgba(251,146,60,0.12)', border: 'rgba(251,146,60,0.2)' },
-  { key: 'overall', icon: Target,   color: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.2)' },
-  { key: 'topics',  icon: BookOpen, color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.2)' },
+  { key: 'time',    icon: Clock,    bg: 'bg-brutal-yellow', color: 'text-black' },
+  { key: 'streak',  icon: Flame,    bg: 'bg-brutal-pink',   color: 'text-black' },
+  { key: 'overall', icon: Target,   bg: 'bg-brutal-green',  color: 'text-black' },
+  { key: 'topics',  icon: BookOpen, bg: 'bg-brutal-blue',   color: 'text-white' },
 ];
 
 export const Stats: React.FC = () => {
@@ -70,79 +70,70 @@ export const Stats: React.FC = () => {
   const weekTotal = weekData.reduce((sum, d) => sum + d.total_minutes, 0);
 
   const statValues = [
-    { value: formatTime(profile?.total_study_minutes ?? 0), label: 'Total Study Time' },
-    { value: `${profile?.streak_days ?? 0}🔥`, label: 'Day Streak' },
-    { value: `${overallPct}%`, label: 'Overall Progress' },
-    { value: completedTopics, label: 'Topics Done' },
+    { value: formatTime(profile?.total_study_minutes ?? 0), label: 'TOTAL STUDY TIME' },
+    { value: `${profile?.streak_days ?? 0}`, label: 'DAY STREAK' },
+    { value: `${overallPct}%`, label: 'OVERALL PROGRESS' },
+    { value: completedTopics, label: 'TOPICS DONE' },
   ];
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      <div>
-        <h2 className="text-white text-xl font-bold tracking-tight">Statistics</h2>
-        <p className="text-slate-500 text-sm mt-0.5">Your study overview</p>
+    <div className="flex flex-col gap-6 pb-4">
+      <div className="brutal-box p-4 bg-white border-4 border-black text-left shadow-[6px_6px_0px_#000]">
+         <h2 className="text-black text-3xl font-black tracking-tighter uppercase" style={{textShadow: '2px 2px 0px #00e5a3'}}>WAR ROOM</h2>
+         <p className="text-black/80 font-bold text-sm uppercase mt-1">Study Overview & Analytics</p>
       </div>
 
       {/* Stat grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         {statCards.map((card, i) => {
           const Icon = card.icon;
           return (
-            <div key={card.key} className="rounded-2xl p-4"
-              style={{ background: card.bg, border: `1px solid ${card.border}` }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
-                style={{ background: `${card.color}22` }}>
-                <Icon className="w-4.5 h-4.5" style={{ color: card.color, width: 18, height: 18 }} />
+            <div key={card.key} className={`brutal-card p-4 ${card.bg} border-4 border-black`}>
+              <div className="flex justify-between items-start mb-2">
+                 <div className="bg-white border-2 border-black w-10 h-10 flex items-center justify-center transform -rotate-3 shadow-[2px_2px_0_#000]">
+                    <Icon className="w-5 h-5 text-black stroke-[3]" />
+                 </div>
               </div>
-              <p className="text-2xl font-bold text-white">{statValues[i].value}</p>
-              <p className="text-slate-500 text-xs mt-0.5">{statValues[i].label}</p>
+              <p className={`text-4xl font-black ${card.color} tracking-tighter`}>{statValues[i].value}</p>
+              <p className="text-black font-bold text-xs uppercase mt-1 border-t-2 border-black pt-1">{statValues[i].label}</p>
             </div>
           );
         })}
       </div>
 
       {/* Weekly chart */}
-      <div className="rounded-2xl p-5"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-white font-semibold text-sm">This Week</span>
-          <span className="text-slate-500 text-xs">{formatTime(weekTotal)} total</span>
+      <div className="brutal-box p-5 bg-white border-4 border-black shadow-[6px_6px_0px_#000]">
+        <div className="flex flex-col items-center mb-6 pb-4 border-b-4 border-black border-dashed">
+          <span className="text-black font-black text-xl uppercase tracking-widest">7-DAY BURN RATE</span>
+          <span className="text-black bg-brutal-yellow font-bold text-sm uppercase px-3 py-1 border-2 border-black mt-2 -rotate-1">{formatTime(weekTotal)} LOGGED</span>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+            <Loader2 className="w-8 h-8 text-black stroke-[3] animate-spin" />
           </div>
         ) : (
-          <div className="flex items-end gap-1.5 h-28">
+          <div className="flex items-end gap-2 h-40 pt-4">
             {weekData.map((d, i) => {
-              const heightPct = maxMins > 0 ? Math.max(4, (d.total_minutes / maxMins) * 100) : 4;
+              const heightPct = maxMins > 0 ? Math.max(8, (d.total_minutes / maxMins) * 100) : 8;
               const dayName = DAYS[new Date(d.session_date + 'T12:00:00').getDay()];
               const isToday = d.session_date === new Date().toISOString().split('T')[0];
               return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <div className="relative w-full flex justify-center group">
+                <div key={i} className="flex-1 flex flex-col items-center h-full justify-end group">
+                  <div className="relative w-full flex justify-center items-end h-full">
                     {d.total_minutes > 0 && (
-                      <div className="absolute -top-7 rounded-md px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 text-[10px]"
-                        style={{ background: 'rgba(99,102,241,0.9)', color: 'white' }}>
+                      <div className="absolute -top-10 brutal-box bg-white px-2 py-1 opacity-0 group-hover:opacity-100 transition whitespace-nowrap z-10 text-xs font-black rotate-3">
                         {formatTime(d.total_minutes)}
                       </div>
                     )}
                     <div
-                      className="w-full rounded-t-xl transition-all duration-500"
+                      className={`w-full border-4 border-black border-b-0 transition-all duration-500 origin-bottom ${isToday ? 'bg-brutal-pink' : d.total_minutes > 0 ? 'bg-brutal-blue' : 'bg-slate-100'}`}
                       style={{
                         height: `${heightPct}%`,
-                        background: isToday
-                          ? 'linear-gradient(180deg, #818cf8, #6366f1)'
-                          : d.total_minutes > 0
-                          ? 'rgba(99,102,241,0.4)'
-                          : 'rgba(255,255,255,0.05)',
-                        boxShadow: isToday ? '0 0 12px rgba(129,140,248,0.4)' : 'none',
                       }}
                     />
                   </div>
-                  <span className="text-[10px] font-semibold"
-                    style={{ color: isToday ? '#818cf8' : '#475569' }}>
+                  <span className={`text-[10px] font-black uppercase mt-2 px-1 border-2 border-black ${isToday ? 'bg-brutal-yellow text-black' : 'bg-white text-black'}`}>
                     {dayName}
                   </span>
                 </div>
@@ -153,41 +144,42 @@ export const Stats: React.FC = () => {
       </div>
 
       {/* Subject breakdown */}
-      <div className="rounded-2xl p-5"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <span className="text-white font-semibold text-sm">Subject Breakdown</span>
-        </div>
+      <div className="brutal-box p-5 bg-brutal-lilac border-4 border-black shadow-[6px_6px_0px_#000]">
+        <h3 className="text-black font-black text-xl uppercase mb-6 flex items-center gap-2 underline decoration-4 underline-offset-4 decoration-black">
+          <TrendingUp className="w-6 h-6 stroke-[3]" /> MODULE BURN
+        </h3>
 
         {subjects.length === 0 ? (
-          <p className="text-slate-600 text-sm">No subjects added yet.</p>
+          <p className="text-black font-bold uppercase text-sm border-2 border-black bg-white p-2">NO GRIND DATA AVAILABLE.</p>
         ) : (
-          <div className="space-y-4">
-            {subjects.map((s) => {
+          <div className="space-y-6">
+            {subjects.map((s, index) => {
               const pct = s.total_topics
                 ? Math.round(((s.completed_topics ?? 0) / s.total_topics) * 100)
                 : 0;
+              const barColors = ['bg-brutal-pink', 'bg-brutal-green', 'bg-brutal-yellow', 'bg-brutal-blue'];
+              const bColor = barColors[index % barColors.length];
+
               return (
-                <div key={s.id}>
-                  <div className="flex items-center justify-between mb-1.5">
+                <div key={s.id} className="bg-white border-4 border-black p-3 hover:-translate-y-1 transition-transform shadow-[4px_4px_0_#000]">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-base">{s.icon}</span>
-                      <span className="text-slate-300 text-sm font-medium">{s.name}</span>
+                      <span className="text-2xl drop-shadow-[2px_2px_0_#000]">{s.icon}</span>
+                      <span className="text-black text-lg font-black uppercase truncate max-w-[150px]">{s.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-600 text-xs">{formatTime(s.total_study_minutes ?? 0)}</span>
-                      <span className="text-xs font-bold" style={{ color: s.color }}>{pct}%</span>
+                      <span className="text-black font-bold text-xs uppercase px-2 py-0.5 border-2 border-black bg-slate-100">{formatTime(s.total_study_minutes ?? 0)}</span>
+                      <span className="text-black text-lg font-black rotate-3">{pct}%</span>
                     </div>
                   </div>
-                  <div className="w-full rounded-full h-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                  <div className="w-full bg-slate-200 border-2 border-black h-4 flex overflow-hidden">
                     <div
-                      className="h-2 rounded-full transition-all duration-700"
-                      style={{ width: `${pct}%`, backgroundColor: s.color, boxShadow: `0 0 8px ${s.color}66` }}
+                      className={`h-full border-r-2 border-black transition-all duration-700 ${bColor}`}
+                      style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <p className="text-slate-600 text-xs mt-1">
-                    {s.completed_topics ?? 0} / {s.total_topics ?? 0} topics
+                  <p className="text-black font-bold text-xs uppercase mt-2 text-right">
+                    {s.completed_topics ?? 0} / {s.total_topics ?? 0} BLOCKS
                   </p>
                 </div>
               );

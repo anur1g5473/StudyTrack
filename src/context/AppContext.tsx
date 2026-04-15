@@ -38,15 +38,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchProfile = useCallback(async (uid: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', uid)
-      .single();
-    if (data) {
-      setProfile(data as Profile);
-      // Check if user is admin (only user with reg_no "25BYB0101" is admin)
-      setIsAdmin((data as Profile).reg_no === '25BYB0101');
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', uid)
+        .single();
+        
+      if (data) {
+        setProfile(data as Profile);
+        setIsAdmin(((data as Profile).reg_no || '').toUpperCase() === '25BYB0101');
+      } else if (error && error.code === 'PGRST116') {
+        // PGRST116 means zero rows found. Auto-heal the database!
+        const session = await supabase.auth.getSession();
+        const user = session.data.session?.user;
+        if (user) {
+          const regNo = user.user_metadata?.reg_no || user.email?.split('@')[0].toUpperCase();
+          const { data: newProfile, error: insertError } = await supabase
+            .from('profiles')
+            .insert({ id: uid, reg_no: regNo })
+            .select('*')
+            .single();
+            
+          if (newProfile && !insertError) {
+            setProfile(newProfile as Profile);
+            setIsAdmin(((newProfile as Profile).reg_no || '').toUpperCase() === '25BYB0101');
+          } else if (insertError) {
+            window.alert('Auto-Heal Insert Error: ' + insertError.message + ' | Code: ' + insertError.code);
+          }
+        }
+      } else if (error) {
+        window.alert('Generic Profile Fetch Error: ' + error.message + ' | Code: ' + error.code);
+      } else {
+        window.alert('Profile Fetch returned absolutely no data and no error!');
+      }
+    } catch (err: any) {
+      console.error('Error in fetchProfile:', err);
+      window.alert('Profile Fetch Error: ' + err.message);
     }
   }, []);
 

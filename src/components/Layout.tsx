@@ -38,32 +38,26 @@ export const Layout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#09091a' }}>
+    <div className="min-h-screen flex flex-col bg-transparent">
       {/* Top App Bar */}
       <header className="sticky top-0 z-40 safe-top"
         style={{
-          background: 'rgba(9,9,26,0.85)',
-          backdropFilter: 'blur(30px)',
-          WebkitBackdropFilter: 'blur(30px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          background: '#fff',
+          borderBottom: '3px solid #000',
         }}>
-        <div className="max-w-md mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className={`mx-auto px-4 py-3.5 flex items-center justify-between transition-all duration-300 ${view.type === 'admin' ? 'max-w-7xl' : 'max-w-md'}`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3))',
-                border: '1px solid rgba(99,102,241,0.3)',
-              }}>
-              <span className="text-base">📘</span>
+            <div className="w-8 h-8 flex items-center justify-center brutal-box bg-brutal-pink">
+              <span className="text-base leading-none">⚡</span>
             </div>
-            <span className="font-bold text-white text-lg tracking-tight">StudyTrack</span>
+            <span className="font-extrabold text-black text-xl tracking-tight uppercase">StudyTrack</span>
           </div>
           <ViewTitle />
         </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-24 page-enter">
+      <main className={`flex-1 mx-auto w-full px-4 pt-4 pb-24 page-enter transition-all duration-300 ${view.type === 'admin' ? 'max-w-7xl' : 'max-w-md'}`}>
         {renderContent()}
       </main>
 
@@ -89,12 +83,7 @@ const ViewTitle: React.FC = () => {
   const viewLabel = label[view.type];
   if (!viewLabel) return null;
   return (
-    <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
-      style={{
-        background: 'rgba(99,102,241,0.12)',
-        color: '#818cf8',
-        border: '1px solid rgba(99,102,241,0.2)',
-      }}>
+    <span className="text-xs font-black uppercase tracking-wider px-3 py-1.5 brutal-box bg-brutal-yellow text-black">
       {viewLabel}
     </span>
   );

@@ -20,17 +20,17 @@ export const Auth: React.FC = () => {
     setSuccess('');
 
     if (!regNo.trim() || !password) {
-      setError('Please fill in all fields.');
+      setError('PLEASE FILL IN ALL FIELDS.');
       return;
     }
 
     if (mode === 'signup') {
       if (password !== confirmPassword) {
-        setError('Passwords do not match.');
+        setError('PASSWORDS DO NOT MATCH.');
         return;
       }
       if (password.length < 6) {
-        setError('Password must be at least 6 characters.');
+        setError('PASSWORD MUST BE AT LEAST 6 CHARACTERS.');
         return;
       }
     }
@@ -47,7 +47,7 @@ export const Auth: React.FC = () => {
       if (signUpError) {
         setError(signUpError.message);
       } else {
-        setSuccess('Account created! You can now log in.');
+        setSuccess('ACCOUNT CREATED! YOU CAN NOW LOG IN.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -55,7 +55,7 @@ export const Auth: React.FC = () => {
     } else {
       const { error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) {
-        setError('Invalid Reg No or Password.');
+        setError('INVALID REG NO OR PASSWORD.');
       }
     }
 
@@ -63,97 +63,64 @@ export const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden"
-      style={{ background: 'linear-gradient(160deg, #09091a 0%, #0d0d2b 45%, #09091a 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-brutal-yellow overflow-hidden relative">
 
-      {/* Ambient blobs */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full blur-[100px] opacity-25"
-          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
-        <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full blur-[100px] opacity-20"
-          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full blur-[80px] opacity-10"
-          style={{ background: 'radial-gradient(circle, #60a5fa, transparent 70%)' }} />
-      </div>
+      {/* Grid texture overlay */}
+      <div className="absolute inset-0 z-0 pointer-events-none" style={{
+         backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)',
+         backgroundSize: '40px 40px'
+      }} />
 
-      {/* Grid texture */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }} />
-
-      <div className="relative w-full max-w-sm">
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-18 h-18 rounded-2xl mb-4 float-anim"
-            style={{
-              width: 72, height: 72,
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.25))',
-              border: '1px solid rgba(99,102,241,0.4)',
-              boxShadow: '0 0 30px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
-            }}>
-            <BookOpen className="w-8 h-8" style={{ color: '#818cf8' }} />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-white border-4 border-black shadow-[4px_4px_0_#000] rotate-3 mb-4 transition-transform hover:-rotate-3">
+            <BookOpen className="w-10 h-10 text-black stroke-[3]" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight gradient-text">StudyTrack</h1>
-          <p className="text-slate-400 mt-1.5 text-sm">Your exam prep companion 📘</p>
+          <h1 className="text-4xl font-black tracking-tighter uppercase text-black" style={{textShadow: '2px 2px 0px #fff'}}>STUDYTRACK</h1>
+          <p className="text-black font-bold uppercase mt-2 bg-white border-2 border-black px-3 py-1 inline-block transform -rotate-1">EXAM PREP COMPANION</p>
         </div>
 
-        {/* Glass card */}
-        <div className="rounded-3xl p-6 shadow-2xl"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)',
-          }}>
+        {/* Brutal card */}
+        <div className="brutal-box p-6 bg-white border-4 border-black shadow-[8px_8px_0px_#000]">
 
           {/* Mode tabs */}
-          <div className="flex rounded-2xl p-1 mb-6"
-            style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex mb-6 border-4 border-black bg-slate-100">
             {(['login', 'signup'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setError(''); setSuccess(''); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
-                style={mode === m ? {
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  color: 'white',
-                  boxShadow: '0 4px 15px rgba(99,102,241,0.35)',
-                } : { color: '#64748b' }}
+                className={`flex-1 py-3 text-sm font-black uppercase transition-all ${
+                  mode === m 
+                  ? 'bg-brutal-blue text-white shadow-none' 
+                  : 'bg-transparent text-black hover:bg-slate-200'
+                } ${m === 'login' ? 'border-r-4 border-black' : ''}`}
               >
-                {m === 'login' ? 'Login' : 'Sign Up'}
+                {m === 'login' ? 'LOGIN' : 'SIGN UP'}
               </button>
             ))}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Reg No */}
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest">
-                Register Number
+              <label className="block text-sm font-black text-black mb-2 uppercase">
+                REGISTER NUMBER
               </label>
               <input
                 type="text"
                 value={regNo}
                 onChange={(e) => setRegNo(e.target.value)}
-                placeholder="e.g. 22CS123"
-                className="w-full rounded-2xl px-4 py-3.5 text-white text-sm placeholder-slate-600 transition-all duration-200"
-                style={{
-                  background: 'rgba(0,0,0,0.35)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                }}
-                onFocus={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.6)'}
-                onBlur={(e) => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'}
+                placeholder="E.G. 22CS123"
+                className="w-full px-4 py-3 bg-white text-black font-bold text-lg uppercase border-4 border-black placeholder:text-black/30 focus:outline-none focus:ring-4 focus:ring-brutal-green transition-all"
                 autoComplete="username"
               />
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest">
-                Password
+              <label className="block text-sm font-black text-black mb-2 uppercase">
+                PASSWORD
               </label>
               <div className="relative">
                 <input
@@ -161,21 +128,15 @@ export const Auth: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl px-4 py-3.5 pr-12 text-white text-sm placeholder-slate-600 transition-all duration-200"
-                  style={{
-                    background: 'rgba(0,0,0,0.35)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                  onFocus={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.6)'}
-                  onBlur={(e) => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'}
+                  className="w-full px-4 py-3 bg-white text-black font-bold text-lg border-4 border-black placeholder:text-black/30 focus:outline-none focus:ring-4 focus:ring-brutal-pink transition-all pr-12"
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-0 top-0 h-full w-12 flex items-center justify-center border-l-4 border-black bg-slate-100 hover:bg-slate-200"
                 >
-                  {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPass ? <EyeOff className="w-5 h-5 text-black stroke-[3]" /> : <Eye className="w-5 h-5 text-black stroke-[3]" />}
                 </button>
               </div>
             </div>
@@ -183,36 +144,28 @@ export const Auth: React.FC = () => {
             {/* Confirm Password */}
             {mode === 'signup' && (
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-widest">
-                  Confirm Password
+                <label className="block text-sm font-black text-black mb-2 uppercase">
+                  CONFIRM PASSWORD
                 </label>
                 <input
                   type={showPass ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl px-4 py-3.5 text-white text-sm placeholder-slate-600 transition-all duration-200"
-                  style={{
-                    background: 'rgba(0,0,0,0.35)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
-                  onFocus={(e) => e.currentTarget.style.border = '1px solid rgba(99,102,241,0.6)'}
-                  onBlur={(e) => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.08)'}
+                  className="w-full px-4 py-3 bg-white text-black font-bold text-lg border-4 border-black placeholder:text-black/30 focus:outline-none focus:ring-4 focus:ring-brutal-blue transition-all"
                   autoComplete="new-password"
                 />
               </div>
             )}
 
             {error && (
-              <div className="rounded-2xl px-4 py-3 text-sm font-medium"
-                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+              <div className="p-3 bg-brutal-orange border-4 border-black font-black text-white text-sm uppercase">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="rounded-2xl px-4 py-3 text-sm font-medium"
-                style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#34d399' }}>
+              <div className="p-3 bg-brutal-green border-4 border-black font-black text-black text-sm uppercase">
                 {success}
               </div>
             )}
@@ -220,25 +173,20 @@ export const Auth: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full font-bold py-4 rounded-2xl flex items-center justify-center gap-2 text-sm mt-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
-              style={{
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                color: 'white',
-                boxShadow: loading ? 'none' : '0 8px 25px rgba(99,102,241,0.4)',
-              }}
-              onMouseEnter={(e) => !loading && (e.currentTarget.style.boxShadow = '0 12px 35px rgba(99,102,241,0.55)')}
-              onMouseLeave={(e) => !loading && (e.currentTarget.style.boxShadow = '0 8px 25px rgba(99,102,241,0.4)')}
+              className="w-full py-4 text-xl font-black uppercase text-white bg-black hover:bg-slate-800 disabled:opacity-50 transition-all brutal-btn flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : mode === 'login' ? 'Login →' : 'Create Account →'}
+                <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
+              ) : mode === 'login' ? 'INITIALIZE SESSION' : 'REGISTER PROFILE'}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-slate-700 text-xs mt-5">
-          Secured by Supabase Auth 🔒
-        </p>
+        <div className="mt-8 text-center bg-white border-4 border-black p-2 transform rotate-1">
+          <p className="text-black font-black text-xs uppercase tracking-widest">
+            SECURED BY SUPABASE MATRIX 🔒
+          </p>
+        </div>
       </div>
     </div>
   );

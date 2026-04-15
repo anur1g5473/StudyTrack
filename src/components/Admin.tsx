@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Plus, X, Users, BookOpen, Settings, Code, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Users, BookOpen, Settings, Code, ChevronDown, ChevronRight, Edit2, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 import type { Developer } from '@/types';
@@ -67,39 +67,59 @@ export const Admin: React.FC = () => {
   const [modules, setModules] = useState<UniversityModule[]>([]);
   const [topics, setTopics] = useState<UniversityTopic[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // User edit state
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editUserData, setEditUserData] = useState<Partial<UserData>>({});
+
+  // Developer form state
   const [devFormOpen, setDevFormOpen] = useState(false);
-  const [newDeveloper, setNewDeveloper] = useState<Partial<Developer>>({
-    skills: [],
-  });
+  const [newDeveloper, setNewDeveloper] = useState<Partial<Developer>>({ skills: [] });
+
+  // Developer edit state
+  const [editingDevId, setEditingDevId] = useState<string | null>(null);
+  const [editDevData, setEditDevData] = useState<Partial<Developer>>({});
 
   // Template management state
   const [expandedUniv, setExpandedUniv] = useState<string | null>(null);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [unirForm, setUnivForm] = useState(false);
+  
   const [newUniv, setNewUniv] = useState({ name: '', location: '', emoji: '🎓', color: '#6366f1' });
   const [newSubj, setNewSubj] = useState({ name: '', icon: '📘', color: '#06b6d4' });
   const [newMod, setNewMod] = useState({ name: '' });
   const [newTopic, setNewTopic] = useState({ name: '' });
 
+  // Template Edit State
+  const [editingUnivId, setEditingUnivId] = useState<string | null>(null);
+  const [editUnivData, setEditUnivData] = useState<Partial<University>>({});
+  
+  const [editingSubjId, setEditingSubjId] = useState<string | null>(null);
+  const [editSubjData, setEditSubjData] = useState<Partial<UniversitySubject>>({});
+
+  const [editingModId, setEditingModId] = useState<string | null>(null);
+  const [editModData, setEditModData] = useState<{name: string}>({name: ''});
+
+  const [editingTopicId, setEditingTopicId] = useState<string | null>(null);
+  const [editTopicData, setEditTopicData] = useState<{name: string}>({name: ''});
+
   // Security check: If user is not admin, show access denied
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
-          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <X className="w-8 h-8 text-red-500" />
+        <div className="w-20 h-20 brutal-box bg-red-600 flex items-center justify-center mb-6">
+          <X className="w-10 h-10 text-white stroke-[4]" />
         </div>
-        <p className="text-white font-bold text-lg mb-1">Access Denied</p>
-        <p className="text-slate-500 text-sm text-center max-w-xs mb-6">
-          You don't have permission to access this page. Only authorized administrators can view this content.
+        <p className="text-black font-black text-2xl mb-2 uppercase">Access Denied</p>
+        <p className="text-black/70 font-bold text-center max-w-xs mb-8 uppercase">
+          CLEARANCE LEVEL INSUFFICIENT.
         </p>
         <button
           onClick={() => navigate({ type: 'home' })}
-          className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          className="brutal-btn bg-black text-white px-8 py-3 w-full max-w-xs"
         >
-          Go Back Home
+          GO BACK
         </button>
       </div>
     );
@@ -113,771 +133,504 @@ export const Admin: React.FC = () => {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setUsers(data as UserData[]);
-    }
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+    if (data) setUsers(data as UserData[]);
     setLoading(false);
   };
 
-  const fetchDevelopers = async () => {
-    const { data } = await supabase
-      .from('developers')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (data) setDevelopers(data as Developer[]);
-  };
-
-  // ─── Template Management Functions ──────────────────────
-  const fetchUniversities = async () => {
-    const { data } = await supabase
-      .from('universities')
-      .select('*')
-      .order('created_at', { ascending: true });
-    if (data) setUniversities(data as University[]);
-  };
-
-  const fetchSubjects = async (univId: string) => {
-    const { data } = await supabase
-      .from('university_subjects')
-      .select('*')
-      .eq('university_id', univId)
-      .order('order_index', { ascending: true });
-    if (data) setSubjects(data as UniversitySubject[]);
-  };
-
-  const fetchModules = async (subjId: string) => {
-    const { data } = await supabase
-      .from('university_modules')
-      .select('*')
-      .eq('university_subject_id', subjId)
-      .order('order_index', { ascending: true });
-    if (data) setModules(data as UniversityModule[]);
-  };
-
-  const fetchTopics = async (modId: string) => {
-    const { data } = await supabase
-      .from('university_topics')
-      .select('*')
-      .eq('university_module_id', modId)
-      .order('order_index', { ascending: true });
-    if (data) setTopics(data as UniversityTopic[]);
-  };
-
-  const addUniversity = async () => {
-    if (!newUniv.name) {
-      alert('University name is required');
-      return;
-    }
+  const updateUser = async (userId: string) => {
     try {
-      await supabase.from('universities').insert({
-        name: newUniv.name,
-        location: newUniv.location,
-        emoji: newUniv.emoji,
-        color: newUniv.color,
-        is_active: true,
-      });
-      setNewUniv({ name: '', location: '', emoji: '🎓', color: '#6366f1' });
-      setUnivForm(false);
-      fetchUniversities();
-    } catch (error) {
-      console.error('Error adding university:', error);
+      await supabase.from('profiles').update({
+        full_name: editUserData.full_name,
+        branch: editUserData.branch,
+        college_year: editUserData.college_year,
+      }).eq('id', userId);
+      setEditingUserId(null);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const addSubject = async (univId: string) => {
-    if (!newSubj.name) {
-      alert('Subject name is required');
-      return;
-    }
-    try {
-      await supabase.from('university_subjects').insert({
-        university_id: univId,
-        name: newSubj.name,
-        icon: newSubj.icon,
-        color: newSubj.color,
-        order_index: subjects.length,
-        is_active: true,
-      });
-      setNewSubj({ name: '', icon: '📘', color: '#06b6d4' });
-      fetchSubjects(univId);
-    } catch (error) {
-      console.error('Error adding subject:', error);
-    }
-  };
-
-  const addModule = async (subjId: string) => {
-    if (!newMod.name) {
-      alert('Module name is required');
-      return;
-    }
-    try {
-      await supabase.from('university_modules').insert({
-        university_subject_id: subjId,
-        name: newMod.name,
-        order_index: modules.length,
-        is_active: true,
-      });
-      setNewMod({ name: '' });
-      fetchModules(subjId);
-    } catch (error) {
-      console.error('Error adding module:', error);
-    }
-  };
-
-  const addTopic = async (modId: string) => {
-    if (!newTopic.name) {
-      alert('Topic name is required');
-      return;
-    }
-    try {
-      await supabase.from('university_topics').insert({
-        university_module_id: modId,
-        name: newTopic.name,
-        order_index: topics.length,
-        is_active: true,
-      });
-      setNewTopic({ name: '' });
-      fetchTopics(modId);
-    } catch (error) {
-      console.error('Error adding topic:', error);
-    }
-  };
-
-  const deleteUniversity = async (id: string) => {
-    if (!confirm('Delete this university? All subjects, modules, and topics will be deleted.')) return;
-    try {
-      await supabase.from('universities').delete().eq('id', id);
-      fetchUniversities();
-    } catch (error) {
-      console.error('Error deleting university:', error);
-    }
-  };
-
-  const deleteSubject = async (id: string, univId: string) => {
-    if (!confirm('Delete this subject? All modules and topics will be deleted.')) return;
-    try {
-      await supabase.from('university_subjects').delete().eq('id', id);
-      fetchSubjects(univId);
-    } catch (error) {
-      console.error('Error deleting subject:', error);
-    }
-  };
-
-  const deleteModule = async (id: string, subjId: string) => {
-    if (!confirm('Delete this module? All topics will be deleted.')) return;
-    try {
-      await supabase.from('university_modules').delete().eq('id', id);
-      fetchModules(subjId);
-    } catch (error) {
-      console.error('Error deleting module:', error);
-    }
-  };
-
-  const deleteTopic = async (id: string, modId: string) => {
-    try {
-      await supabase.from('university_topics').delete().eq('id', id);
-      fetchTopics(modId);
-    } catch (error) {
-      console.error('Error deleting topic:', error);
-    }
-  };
-
-  const addDeveloper = async () => {
-    if (!newDeveloper.name || !newDeveloper.email || !newDeveloper.role) {
-      alert('Please fill in required fields');
-      return;
-    }
-
-    try {
-      await supabase.from('developers').insert({
-        name: newDeveloper.name,
-        email: newDeveloper.email,
-        role: newDeveloper.role,
-        github_profile: newDeveloper.github_profile,
-        linkedin_profile: newDeveloper.linkedin_profile,
-        bio: newDeveloper.bio,
-        contributions: newDeveloper.contributions,
-        skills: newDeveloper.skills || [],
-        is_active: true,
-      });
-      setNewDeveloper({ skills: [] });
-      setDevFormOpen(false);
-      fetchDevelopers();
-    } catch (error) {
-      console.error('Error adding developer:', error);
-    }
-  };
-
-  const deleteDeveloper = async (devId: string) => {
-    if (!confirm('Are you sure? This will remove the developer.')) return;
-    
-    try {
-      await supabase.from('developers').delete().eq('id', devId);
-      fetchDevelopers();
-    } catch (error) {
-      console.error('Error deleting developer:', error);
-    }
-  };
-
- const deleteUser = async (userId: string) => {
+  const deleteUser = async (userId: string) => {
     if (!confirm('Are you sure? This will delete all user data.')) return;
-
     try {
-      // Delete from profiles
       await supabase.from('profiles').delete().eq('id', userId);
-
-      // Refresh list
       fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
     }
   };
 
+  const fetchDevelopers = async () => {
+    const { data } = await supabase.from('developers').select('*').order('created_at', { ascending: true });
+    if (data) setDevelopers(data as Developer[]);
+  };
+
+  const addDeveloper = async () => {
+    if (!newDeveloper.name || !newDeveloper.email || !newDeveloper.role) return alert('Please fill in required fields');
+    try {
+      await supabase.from('developers').insert({ ...newDeveloper, is_active: true });
+      setNewDeveloper({ skills: [] }); setDevFormOpen(false); fetchDevelopers();
+    } catch (error) { console.error(error); }
+  };
+
+  const updateDeveloper = async (devId: string) => {
+    try {
+      await supabase.from('developers').update(editDevData).eq('id', devId);
+      setEditingDevId(null); fetchDevelopers();
+    } catch (error) { console.error(error); }
+  };
+
+  const deleteDeveloper = async (devId: string) => {
+    if (!confirm('Are you sure?')) return;
+    try { await supabase.from('developers').delete().eq('id', devId); fetchDevelopers(); } catch (error) { console.error(error); }
+  };
+
+  // ─── Template Management Functions ──────────────────────
+  const fetchUniversities = async () => {
+     const { data } = await supabase.from('universities').select('*').order('created_at', { ascending: true });
+     if (data) setUniversities(data as University[]);
+  };
+  const fetchSubjects = async (univId: string) => {
+     const { data } = await supabase.from('university_subjects').select('*').eq('university_id', univId).order('order_index', { ascending: true });
+     if (data) setSubjects(data as UniversitySubject[]);
+  };
+  const fetchModules = async (subjId: string) => {
+     const { data } = await supabase.from('university_modules').select('*').eq('university_subject_id', subjId).order('order_index', { ascending: true });
+     if (data) setModules(data as UniversityModule[]);
+  };
+  const fetchTopics = async (modId: string) => {
+     const { data } = await supabase.from('university_topics').select('*').eq('university_module_id', modId).order('order_index', { ascending: true });
+     if (data) setTopics(data as UniversityTopic[]);
+  };
+
+  const addUniversity = async () => {
+    if (!newUniv.name) return alert('University name is required');
+    try {
+      await supabase.from('universities').insert({ ...newUniv, is_active: true });
+      setNewUniv({ name: '', location: '', emoji: '🎓', color: '#6366f1' }); setUnivForm(false); fetchUniversities();
+    } catch (error) { console.error(error); }
+  };
+  const updateUniversity = async (id: string) => {
+    try { await supabase.from('universities').update(editUnivData).eq('id', id); setEditingUnivId(null); fetchUniversities(); } catch (error) { console.error(error); }
+  };
+  const deleteUniversity = async (id: string) => {
+    if (!confirm('Delete this university? All subjects will be deleted.')) return;
+    try { await supabase.from('universities').delete().eq('id', id); fetchUniversities(); } catch (error) { console.error(error); }
+  };
+
+  const addSubject = async (univId: string) => {
+    if (!newSubj.name) return alert('Subject name required');
+    try {
+      await supabase.from('university_subjects').insert({ university_id: univId, name: newSubj.name, icon: newSubj.icon, color: newSubj.color, order_index: subjects.length, is_active: true });
+      setNewSubj({ name: '', icon: '📘', color: '#06b6d4' }); fetchSubjects(univId);
+    } catch (error) { console.error(error); }
+  };
+  const updateSubject = async (id: string, univId: string) => {
+    try { await supabase.from('university_subjects').update(editSubjData).eq('id', id); setEditingSubjId(null); fetchSubjects(univId); } catch (error) { console.error(error); }
+  };
+  const deleteSubject = async (id: string, univId: string) => {
+    if (!confirm('Delete this subject?')) return;
+    try { await supabase.from('university_subjects').delete().eq('id', id); fetchSubjects(univId); } catch (error) { console.error(error); }
+  };
+
+  const addModule = async (subjId: string) => {
+    if (!newMod.name) return;
+    try {
+      await supabase.from('university_modules').insert({ university_subject_id: subjId, name: newMod.name, order_index: modules.length, is_active: true });
+      setNewMod({ name: '' }); fetchModules(subjId);
+    } catch (error) { console.error(error); }
+  };
+  const updateModule = async (id: string, subjId: string) => {
+    try { await supabase.from('university_modules').update(editModData).eq('id', id); setEditingModId(null); fetchModules(subjId); } catch (error) { console.error(error); }
+  };
+  const deleteModule = async (id: string, subjId: string) => {
+    if (!confirm('Delete this module?')) return;
+    try { await supabase.from('university_modules').delete().eq('id', id); fetchModules(subjId); } catch (error) { console.error(error); }
+  };
+
+  const addTopic = async (modId: string) => {
+    if (!newTopic.name) return;
+    try {
+      await supabase.from('university_topics').insert({ university_module_id: modId, name: newTopic.name, order_index: topics.length, is_active: true });
+      setNewTopic({ name: '' }); fetchTopics(modId);
+    } catch (error) { console.error(error); }
+  };
+  const updateTopic = async (id: string, modId: string) => {
+    try { await supabase.from('university_topics').update(editTopicData).eq('id', id); setEditingTopicId(null); fetchTopics(modId); } catch (error) { console.error(error); }
+  };
+  const deleteTopic = async (id: string, modId: string) => {
+    try { await supabase.from('university_topics').delete().eq('id', id); fetchTopics(modId); } catch (error) { console.error(error); }
+  };
+
   return (
-    <div className="flex flex-col gap-4 pb-4">
-      {/* Header with back button */}
-      <div className="flex items-center gap-3 mb-2">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6 brutal-box p-4 bg-red-600 shadow-[6px_6px_0px_#000]">
         <button
           onClick={() => navigate({ type: 'home' })}
-          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 hover:bg-slate-700"
-          style={{ background: 'rgba(255,255,255,0.05)' }}>
-          <ArrowLeft className="w-5 h-5 text-slate-400" />
+          className="w-12 h-12 brutal-box bg-white flex items-center justify-center active:translate-y-1 active:translate-x-1 active:shadow-none hover:bg-slate-100"
+        >
+          <ArrowLeft className="w-6 h-6 text-black stroke-[3]" />
         </button>
         <div>
-          <h1 className="text-white font-bold text-lg">Admin Panel</h1>
-          <p className="text-slate-500 text-xs">Manage users and system settings</p>
+          <h1 className="text-white font-black text-2xl tracking-tighter uppercase">SYSTEM CONTROL</h1>
+          <p className="text-white font-bold text-xs uppercase underline decoration-2 underline-offset-4">SUPERUSER ACCESS ONLY</p>
         </div>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex gap-2 mb-4">
-        {['users', 'templates', 'developers', 'settings'].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab as typeof activeTab)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
-            style={{
-              background: activeTab === tab ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.05)',
-              color: activeTab === tab ? 'white' : '#818cf8',
-              border: activeTab === tab ? 'none' : '1px solid rgba(99,102,241,0.2)',
-            }}>
-            {tab === 'users' && <Users className="w-4 h-4" />}
-            {tab === 'templates' && <BookOpen className="w-4 h-4" />}
-            {tab === 'developers' && <Code className="w-4 h-4" />}
-            {tab === 'settings' && <Settings className="w-4 h-4" />}
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Users Tab */}
-      {activeTab === 'users' && (
-        <div className="rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center justify-between">
-              <p className="text-white font-semibold">Users ({users.length})</p>
-              <button
-                onClick={fetchUsers}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200"
-                style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                Refresh
-              </button>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="px-4 py-8 text-center text-slate-500">Loading users...</div>
-          ) : users.length === 0 ? (
-            <div className="px-4 py-8 text-center text-slate-500">No users found</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-black/20">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-slate-400 font-semibold">Reg No</th>
-                    <th className="px-4 py-3 text-left text-slate-400 font-semibold">Name</th>
-                    <th className="px-4 py-3 text-left text-slate-400 font-semibold">Branch</th>
-                    <th className="px-4 py-3 text-left text-slate-400 font-semibold">Study Time</th>
-                    <th className="px-4 py-3 text-left text-slate-400 font-semibold">Joined</th>
-                    <th className="px-4 py-3 text-center text-slate-400 font-semibold">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                      <td className="px-4 py-3">
-                        <span className="text-white font-medium">{user.reg_no}</span>
-                        {user.reg_no === '25BYB0101' && (
-                          <span className="ml-2 px-2 py-0.5 rounded text-xs font-bold"
-                            style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444' }}>
-                            ADMIN
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{user.full_name}</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{user.branch}</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
-                        {Math.floor(user.total_study_minutes / 60)}h {user.total_study_minutes % 60}m
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 flex justify-center gap-2">
-                        <button
-                          className="p-1.5 rounded-lg transition-all duration-200 hover:bg-red-500/20"
-                          style={{ background: 'rgba(239,68,68,0.1)' }}
-                          onClick={() => deleteUser(user.id)}>
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Templates Tab */}
-      {activeTab === 'templates' && (
-        <div className="rounded-2xl p-4 space-y-3"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-semibold">University Templates</h3>
+      <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 pb-4">
+        
+        {/* Sidebar Navigation */}
+        <div className="w-full md:w-64 shrink-0 flex flex-col gap-3">
+          {[ 
+            { id: 'users', label: 'USERS', icon: Users, color: 'bg-brutal-blue' }, 
+            { id: 'templates', label: 'TEMPLATES', icon: BookOpen, color: 'bg-brutal-yellow' }, 
+            { id: 'developers', label: 'DEVELOPERS', icon: Code, color: 'bg-brutal-pink' }, 
+            { id: 'settings', label: 'CONFIG', icon: Settings, color: 'bg-slate-300' } 
+          ].map((tab) => (
             <button
-              onClick={() => setUnivForm(!unirForm)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-              <Plus className="w-4 h-4" />
-              Add University
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-3 px-5 py-4 text-sm font-black border-4 border-black transition-transform active:translate-y-1 ${
+                 activeTab === tab.id 
+                 ? `${tab.color} text-black translate-y-1 shadow-none` 
+                 : 'bg-white text-black shadow-[4px_4px_0_#000] hover:-translate-y-1 focus:-translate-y-1'
+              }`}
+            >
+              <tab.icon className="w-6 h-6 stroke-[3]" />
+              {tab.label}
             </button>
-          </div>
+          ))}
+        </div>
 
-          {/* Add University Form */}
-          {unirForm && (
-            <div className="p-3 rounded-xl space-y-2"
-              style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <input
-                type="text"
-                placeholder="University name"
-                value={newUniv.name}
-                onChange={(e) => setNewUniv({ ...newUniv, name: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-              />
-              <input
-                type="text"
-                placeholder="Location"
-                value={newUniv.location}
-                onChange={(e) => setNewUniv({ ...newUniv, location: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-              />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Emoji"
-                  maxLength={2}
-                  value={newUniv.emoji}
-                  onChange={(e) => setNewUniv({ ...newUniv, emoji: e.target.value })}
-                  className="w-20 px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <input
-                  type="color"
-                  value={newUniv.color}
-                  onChange={(e) => setNewUniv({ ...newUniv, color: e.target.value })}
-                  className="w-20 px-2 py-2 rounded-lg cursor-pointer"
-                />
+        {/* Main Content Area */}
+        <div className="flex-1 brutal-box bg-white p-6 overflow-y-auto custom-scrollbar shadow-[8px_8px_0_#000]">
+          
+          {/* ──────────────── USERS TAB ──────────────── */}
+          {activeTab === 'users' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-6 pb-2 border-b-4 border-black">
+                <h3 className="text-black font-black text-2xl uppercase">User Directory ({users.length})</h3>
+                <button onClick={fetchUsers} className="px-4 py-2 brutal-btn bg-brutal-pink text-black text-xs">REFRESH</button>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={addUniversity}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>
-                  Add
-                </button>
-                <button
-                  onClick={() => setUnivForm(false)}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-400"
-                  style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  Cancel
-                </button>
+              <div className="overflow-x-auto border-4 border-black border-b-0 shadow-[4px_4px_0_#000]">
+                 <table className="w-full text-sm text-left">
+                   <thead className="bg-black text-white uppercase text-xs font-black">
+                     <tr>
+                       <th className="px-6 py-4 border-b-4 border-white">Reg No</th>
+                       <th className="px-6 py-4 border-b-4 border-white">Name</th>
+                       <th className="px-6 py-4 border-b-4 border-white">Branch / Year</th>
+                       <th className="px-6 py-4 border-b-4 border-white">Study Time</th>
+                       <th className="px-6 py-4 text-center border-b-4 border-white border-l-4">Actions</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y-4 divide-black bg-white">
+                    {users.map(user => {
+                      const isEditing = editingUserId === user.id;
+                      return (
+                        <tr key={user.id} className={`${isEditing ? 'bg-brutal-yellow' : 'hover:bg-brutal-yellow/20'} transition-colors`}>
+                          <td className="px-6 py-4 border-r-4 border-black">
+                            <span className="text-black font-black block text-lg">{user.reg_no}</span>
+                            {user.reg_no === '25BYB0101' && <span className="text-[10px] uppercase font-black text-white bg-red-600 px-2 py-0.5 mt-1 border-2 border-black inline-block">ADMIN</span>}
+                          </td>
+                          <td className="px-6 py-4 border-r-4 border-black">
+                            {isEditing ? (
+                              <input type="text" value={editUserData.full_name || ''} onChange={e => setEditUserData({...editUserData, full_name: e.target.value})} className="bg-white border-4 border-black px-2 py-1 text-black font-bold w-full uppercase" placeholder="NAME" />
+                            ) : (
+                              <span className="text-black font-bold uppercase">{user.full_name || 'NO NAME'}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 border-r-4 border-black">
+                             {isEditing ? (
+                               <div className="space-y-2">
+                                 <input type="text" value={editUserData.branch || ''} onChange={e => setEditUserData({...editUserData, branch: e.target.value})} className="bg-white border-4 border-black px-2 py-1 text-black font-bold w-full text-xs uppercase" placeholder="BRANCH" />
+                                 <input type="text" value={editUserData.college_year || ''} onChange={e => setEditUserData({...editUserData, college_year: e.target.value})} className="bg-white border-4 border-black px-2 py-1 text-black font-bold w-full text-xs uppercase" placeholder="YEAR" />
+                               </div>
+                             ) : (
+                               <span className="text-black font-bold text-xs uppercase block">{user.branch || 'N/A'}<br/>{user.college_year || 'N/A'}</span>
+                             )}
+                          </td>
+                          <td className="px-6 py-4 text-black font-black border-r-4 border-black bg-slate-100">
+                             {Math.floor(user.total_study_minutes / 60)}H {user.total_study_minutes % 60}M
+                          </td>
+                          <td className="px-6 py-4 flex justify-center items-center gap-3">
+                             {isEditing ? (
+                               <>
+                                 <button onClick={() => updateUser(user.id)} className="w-10 h-10 brutal-box bg-brutal-green text-black flex items-center justify-center hover:bg-[#00ffb5] shadow-none border-4"><Check className="w-5 h-5 stroke-[3]" /></button>
+                                 <button onClick={() => setEditingUserId(null)} className="w-10 h-10 brutal-box bg-slate-300 text-black flex items-center justify-center hover:bg-slate-400 shadow-none border-4"><X className="w-5 h-5 stroke-[3]" /></button>
+                               </>
+                             ) : (
+                               <>
+                                 <button onClick={() => { setEditingUserId(user.id); setEditUserData(user); }} className="w-10 h-10 brutal-box bg-brutal-blue text-white flex items-center justify-center hover:bg-[#1da2ff] shadow-none border-4"><Edit2 className="w-5 h-5 stroke-[3]" /></button>
+                                 <button onClick={() => deleteUser(user.id)} className="w-10 h-10 brutal-box bg-red-500 text-white flex items-center justify-center hover:bg-red-600 shadow-none border-4"><Trash2 className="w-5 h-5 stroke-[3]" /></button>
+                               </>
+                             )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                   </tbody>
+                 </table>
               </div>
             </div>
           )}
 
-          {/* Universities List */}
-          {universities.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">No universities yet</div>
-          ) : (
-            universities.map((univ) => (
-              <div key={univ.id} className="rounded-xl overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                
-                {/* University Header */}
-                <button
-                  onClick={() => {
-                    setExpandedUniv(expandedUniv === univ.id ? null : univ.id);
-                    if (expandedUniv !== univ.id) fetchSubjects(univ.id);
-                  }}
-                  className="w-full flex items-center justify-between p-3 hover:bg-white/5 transition-all"
-                  style={{ background: univ.color + '20' }}>
-                  <div className="flex items-center gap-3">
-                    {expandedUniv === univ.id ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                    <span className="text-2xl">{univ.emoji}</span>
-                    <div className="text-left">
-                      <p className="text-white font-semibold">{univ.name}</p>
-                      <p className="text-slate-500 text-xs">{univ.location || 'No location'}</p>
-                    </div>
+          {/* ──────────────── TEMPLATES TAB ──────────────── */}
+          {activeTab === 'templates' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b-4 border-black pb-4">
+                <h3 className="text-black font-black text-2xl uppercase">Curriculum Templates</h3>
+                <button onClick={() => setUnivForm(!unirForm)} className="brutal-btn bg-black text-white px-6 py-3 flex items-center gap-2">
+                  <Plus className="w-5 h-5 stroke-[3]" /> ADD MASTER
+                </button>
+              </div>
+
+              {unirForm && (
+                <div className="p-6 bg-brutal-yellow border-4 border-black shadow-[4px_4px_0_#000] grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <input type="text" placeholder="TITLE (E.G. VIT)" value={newUniv.name} onChange={e => setNewUniv({...newUniv, name: e.target.value})} className="px-4 py-3 font-bold uppercase rounded-none border-4 border-black bg-white focus:outline-none focus:ring-4 focus:ring-black" />
+                  <input type="text" placeholder="SUBTITLE" value={newUniv.location} onChange={e => setNewUniv({...newUniv, location: e.target.value})} className="px-4 py-3 font-bold uppercase rounded-none border-4 border-black bg-white focus:outline-none focus:ring-4 focus:ring-black" />
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="🎓" maxLength={2} value={newUniv.emoji} onChange={e => setNewUniv({...newUniv, emoji: e.target.value})} className="w-20 px-2 py-3 text-center text-xl rounded-none border-4 border-black bg-white focus:outline-none" />
+                    <input type="color" value={newUniv.color} onChange={e => setNewUniv({...newUniv, color: e.target.value})} className="w-16 h-full p-0 m-0 border-4 border-black bg-white cursor-pointer" />
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteUniversity(univ.id);
-                      }}
-                      className="p-1.5 rounded-lg transition-all hover:bg-red-500/20"
-                      style={{ background: 'rgba(239,68,68,0.1)' }}>
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                    <button onClick={addUniversity} className="flex-1 brutal-box border-4 border-black bg-brutal-green text-black font-black uppercase tracking-widest shadow-none hover:bg-[#00ffb5]">SAVE</button>
+                    <button onClick={() => setUnivForm(false)} className="w-14 brutal-box border-4 border-black bg-slate-300 text-black flex items-center justify-center shadow-none hover:bg-slate-400"><X className="w-6 h-6 stroke-[3]"/></button>
                   </div>
-                </button>
+                </div>
+              )}
 
-                {/* Subjects Section */}
-                {expandedUniv === univ.id && (
-                  <div className="p-3 space-y-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-                    {subjects.map((subj) => (
-                      <div key={subj.id} className="rounded-lg p-2"
-                        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        
-                        {/* Subject Header */}
-                        <button
-                          onClick={() => {
-                            setExpandedSubject(expandedSubject === subj.id ? null : subj.id);
-                            if (expandedSubject !== subj.id) fetchModules(subj.id);
-                          }}
-                          className="w-full flex items-center justify-between p-2 hover:bg-white/5 rounded transition-all"
-                          style={{ background: subj.color + '15' }}>
-                          <div className="flex items-center gap-2">
-                            {expandedSubject === subj.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                            <span className="text-lg">{subj.icon}</span>
-                            <p className="text-white font-medium text-sm">{subj.name}</p>
+              <div className="space-y-6">
+                {universities.map(univ => (
+                  <div key={univ.id} className="brutal-card bg-white overflow-hidden shadow-[6px_6px_0_#000]">
+                    
+                    {/* UNIV BINDER HEADER */}
+                    <div className="flex items-center justify-between p-4 border-b-4 border-black" style={{ backgroundColor: univ.color }}>
+                      <button onClick={() => { setExpandedUniv(expandedUniv === univ.id ? null : univ.id); if (expandedUniv !== univ.id) fetchSubjects(univ.id); }} className="flex-1 flex gap-4 items-center text-left">
+                        <div className="w-12 h-12 brutal-box bg-white flex items-center justify-center border-4">
+                           {expandedUniv === univ.id ? <ChevronDown className="w-8 h-8 text-black stroke-[3]" /> : <ChevronRight className="w-8 h-8 text-black stroke-[3]" />}
+                        </div>
+                        <span className="text-4xl drop-shadow-[2px_2px_0_#000] bg-white border-2 border-black px-2">{univ.emoji}</span>
+                        {editingUnivId === univ.id ? (
+                          <div className="flex gap-3 w-full max-w-sm mr-4" onClick={e => e.stopPropagation()}>
+                            <input type="text" value={editUnivData.name || ''} onChange={e=>setEditUnivData({...editUnivData, name: e.target.value})} className="px-3 py-2 border-4 border-black bg-white text-black font-black uppercase text-lg w-full" />
+                            <input type="color" value={editUnivData.color || ''} onChange={e=>setEditUnivData({...editUnivData, color: e.target.value})} className="w-12 border-4 border-black p-0 h-full" />
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteSubject(subj.id, univ.id);
-                            }}
-                            className="p-1 rounded transition-all hover:bg-red-500/20 text-xs">
-                            <Trash2 className="w-3 h-3 text-red-500" />
-                          </button>
-                        </button>
-
-                        {/* Modules Section */}
-                        {expandedSubject === subj.id && (
-                          <div className="ml-6 mt-2 space-y-1">
-                            {modules.map((mod) => (
-                              <div key={mod.id} className="rounded p-1.5"
-                                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                
-                                {/* Module Header */}
-                                <button
-                                  onClick={() => {
-                                    setExpandedModule(expandedModule === mod.id ? null : mod.id);
-                                    if (expandedModule !== mod.id) fetchTopics(mod.id);
-                                  }}
-                                  className="w-full flex items-center justify-between p-1.5 hover:bg-white/5 rounded transition-all text-sm">
-                                  <div className="flex items-center gap-2">
-                                    {expandedModule === mod.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                                    <p className="text-slate-300">{mod.name}</p>
-                                  </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      deleteModule(mod.id, subj.id);
-                                    }}
-                                    className="p-0.5 rounded transition-all hover:bg-red-500/20">
-                                    <Trash2 className="w-3 h-3 text-red-500" />
-                                  </button>
-                                </button>
-
-                                {/* Topics Section */}
-                                {expandedModule === mod.id && (
-                                  <div className="ml-4 mt-1 space-y-0.5">
-                                    {topics.length === 0 && (
-                                      <p className="text-slate-600 text-xs ml-2">No topics</p>
-                                    )}
-                                    {topics.map((topic) => (
-                                      <div key={topic.id} className="flex items-center justify-between p-1 rounded text-xs"
-                                        style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                        <p className="text-slate-400">• {topic.name}</p>
-                                        <button
-                                          onClick={() => deleteTopic(topic.id, mod.id)}
-                                          className="p-0 rounded hover:bg-red-500/20">
-                                          <X className="w-2.5 h-2.5 text-red-500" />
-                                        </button>
-                                      </div>
-                                    ))}
-
-                                    {/* Add Topic Form */}
-                                    <div className="ml-2 mt-1 flex gap-1">
-                                      <input
-                                        type="text"
-                                        placeholder="Add topic"
-                                        value={newTopic.name}
-                                        onChange={(e) => setNewTopic({ name: e.target.value })}
-                                        onKeyPress={(e) => {
-                                          if (e.key === 'Enter') {
-                                            addTopic(mod.id);
-                                          }
-                                        }}
-                                        className="flex-1 px-2 py-1 rounded text-xs text-white bg-slate-700/50"
-                                      />
-                                      <button
-                                        onClick={() => addTopic(mod.id)}
-                                        className="px-2 py-1 rounded text-xs font-semibold text-white"
-                                        style={{ background: '#10b981' }}>
-                                        Add
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-
-                            {/* Add Module Form */}
-                            <div className="ml-4 flex gap-1 mt-1">
-                              <input
-                                type="text"
-                                placeholder="New module"
-                                value={newMod.name}
-                                onChange={(e) => setNewMod({ name: e.target.value })}
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') {
-                                    addModule(subj.id);
-                                  }
-                                }}
-                                className="flex-1 px-2 py-1 rounded text-xs text-white bg-slate-700/50"
-                              />
-                              <button
-                                onClick={() => addModule(subj.id)}
-                                className="px-2 py-1 rounded text-xs font-semibold text-white"
-                                style={{ background: '#6366f1' }}>
-                                Add
-                              </button>
-                            </div>
+                        ) : (
+                          <div>
+                             <p className="text-2xl font-black text-white tracking-tight uppercase" style={{textShadow: '2px 2px 0 #000'}}>{univ.name}</p>
+                             <p className="text-black font-black text-xs uppercase px-2 py-0.5 bg-white border-2 border-black inline-block">{univ.location}</p>
                           </div>
                         )}
-                      </div>
-                    ))}
-
-                    {/* Add Subject Form */}
-                    <div className="flex gap-2 p-2">
-                      <input
-                        type="text"
-                        placeholder="Subject name"
-                        value={newSubj.name}
-                        onChange={(e) => setNewSubj({ ...newSubj, name: e.target.value })}
-                        className="flex-1 px-3 py-1.5 rounded-lg text-xs text-white bg-slate-700/50"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Icon"
-                        maxLength={2}
-                        value={newSubj.icon}
-                        onChange={(e) => setNewSubj({ ...newSubj, icon: e.target.value })}
-                        className="w-12 px-2 py-1.5 rounded-lg text-xs text-white bg-slate-700/50"
-                      />
-                      <button
-                        onClick={() => addSubject(univ.id)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
-                        style={{ background: '#34d399' }}>
-                        Add Subject
                       </button>
+                      <div className="flex gap-2 items-center pl-4 bg-white/20 p-2 border-l-4 border-black">
+                        {editingUnivId === univ.id ? (
+                          <>
+                            <button onClick={() => updateUniversity(univ.id)} className="w-12 h-12 brutal-btn bg-brutal-green flex items-center justify-center"><Check className="w-6 h-6 stroke-[3]" /></button>
+                            <button onClick={() => setEditingUnivId(null)} className="w-12 h-12 brutal-btn bg-slate-300 flex items-center justify-center"><X className="w-6 h-6 stroke-[3]" /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => { setEditingUnivId(univ.id); setEditUnivData(univ); }} className="w-12 h-12 brutal-btn bg-brutal-blue text-white flex items-center justify-center"><Edit2 className="w-6 h-6 stroke-[3]" /></button>
+                            <button onClick={() => deleteUniversity(univ.id)} className="w-12 h-12 brutal-btn bg-red-600 text-white flex items-center justify-center"><Trash2 className="w-6 h-6 stroke-[3]" /></button>
+                          </>
+                        )}
+                      </div>
                     </div>
+
+                    {/* SUBJECTS ACCORDION */}
+                    {expandedUniv === univ.id && (
+                      <div className="p-4 bg-slate-100 space-y-4">
+                        <div className="flex gap-2 items-center mb-6 pb-6 border-b-4 border-black border-dashed">
+                            <input type="text" placeholder="SUBJECT NAME" value={newSubj.name} onChange={e => setNewSubj({...newSubj, name: e.target.value})} className="flex-1 px-4 py-3 bg-white font-black uppercase text-lg border-4 border-black focus:outline-none" />
+                            <input type="text" placeholder="📚" maxLength={2} value={newSubj.icon} onChange={e => setNewSubj({...newSubj, icon: e.target.value})} className="w-16 px-2 py-3 bg-white text-xl text-center border-4 border-black focus:outline-none" />
+                            <button onClick={() => addSubject(univ.id)} className="px-6 py-3 bg-black text-brutal-yellow text-lg border-4 border-black font-black uppercase hover:bg-slate-800 transition-colors">APPEND</button>
+                        </div>
+
+                        {subjects.map(subj => (
+                          <div key={subj.id} className="border-4 border-black bg-white shadow-[4px_4px_0_#000]">
+                            <div className="flex items-center justify-between p-3 border-b-4 border-black" style={{ backgroundColor: subj.color }}>
+                              <button onClick={() => { setExpandedSubject(expandedSubject === subj.id ? null : subj.id); if (expandedSubject !== subj.id) fetchModules(subj.id); }} className="flex-1 flex gap-3 items-center">
+                                <div className="w-8 h-8 flex items-center justify-center bg-white border-2 border-black">
+                                   {expandedSubject === subj.id ? <ChevronDown className="w-6 h-6 text-black stroke-[3]" /> : <ChevronRight className="w-6 h-6 text-black stroke-[3]" />}
+                                </div>
+                                <span className="text-2xl bg-white border-2 border-black w-10 h-10 flex items-center justify-center">{subj.icon}</span>
+                                {editingSubjId === subj.id ? (
+                                  <input type="text" value={editSubjData.name || ''} onChange={e=>setEditSubjData({...editSubjData, name: e.target.value})} onClick={e=>e.stopPropagation()} className="px-3 py-1 border-4 border-black bg-white text-black font-black uppercase w-full max-w-sm" />
+                                ) : (
+                                  <span className="text-white font-black text-xl uppercase" style={{textShadow: '2px 2px 0 #000'}}>{subj.name}</span>
+                                )}
+                              </button>
+                              <div className="flex gap-2">
+                                {editingSubjId === subj.id ? (
+                                  <>
+                                    <button onClick={() => updateSubject(subj.id, univ.id)} className="w-10 h-10 brutal-box shadow-none bg-brutal-green border-2 flex items-center justify-center"><Check className="w-5 h-5 stroke-[3]" /></button>
+                                    <button onClick={() => setEditingSubjId(null)} className="w-10 h-10 brutal-box shadow-none bg-slate-300 border-2 flex items-center justify-center"><X className="w-5 h-5 stroke-[3]" /></button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button onClick={() => { setEditingSubjId(subj.id); setEditSubjData(subj); }} className="w-10 h-10 brutal-box shadow-none bg-brutal-blue text-white border-2 flex items-center justify-center hover:bg-blue-600"><Edit2 className="w-4 h-4 stroke-[3]" /></button>
+                                    <button onClick={() => deleteSubject(subj.id, univ.id)} className="w-10 h-10 brutal-box shadow-none bg-red-600 text-white border-2 flex items-center justify-center hover:bg-red-700"><Trash2 className="w-4 h-4 stroke-[3]" /></button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* MODULES ACCORDION */}
+                            {expandedSubject === subj.id && (
+                              <div className="p-4 bg-slate-50 space-y-4">
+                                <div className="flex gap-2 border-b-4 border-black pb-4">
+                                  <input type="text" placeholder="ADD MODULE" value={newMod.name} onChange={e=>setNewMod({name:e.target.value})} className="flex-1 bg-white border-4 border-black px-4 py-2 font-bold uppercase text-black focus:outline-none" />
+                                  <button onClick={()=>addModule(subj.id)} className="bg-black text-white px-6 font-black uppercase border-4 border-black">ADD</button>
+                                </div>
+                                
+                                {modules.map(mod => (
+                                  <div key={mod.id} className="border-4 border-black bg-white shadow-[2px_2px_0_#000]">
+                                    <div className="flex items-center justify-between p-3 bg-brutal-lilac border-b-4 border-black">
+                                       <button onClick={() => { setExpandedModule(expandedModule === mod.id ? null : mod.id); if (expandedModule !== mod.id) fetchTopics(mod.id); }} className="flex-1 flex gap-2 items-center text-left">
+                                         <div className="w-8 h-8 flex items-center justify-center bg-white border-2 border-black">
+                                           {expandedModule === mod.id ? <ChevronDown className="w-6 h-6 text-black stroke-[3]" /> : <ChevronRight className="w-6 h-6 text-black stroke-[3]" />}
+                                         </div>
+                                         {editingModId === mod.id ? (
+                                           <input value={editModData.name} onChange={e=>setEditModData({name:e.target.value})} onClick={e=>e.stopPropagation()} className="px-3 py-1 bg-white border-4 border-black text-black font-black w-full" />
+                                         ) : (
+                                           <span className="text-black text-lg font-black uppercase">{mod.name}</span>
+                                         )}
+                                       </button>
+                                       <div className="flex gap-2">
+                                         {editingModId === mod.id ? (
+                                            <>
+                                              <button onClick={() => updateModule(mod.id, subj.id)} className="w-8 h-8 bg-brutal-green border-2 border-black flex flex-col justify-center items-center"><Check className="w-4 h-4 stroke-[3]"/></button>
+                                              <button onClick={() => setEditingModId(null)} className="w-8 h-8 bg-slate-300 border-2 border-black flex flex-col justify-center items-center"><X className="w-4 h-4 stroke-[3]"/></button>
+                                            </>
+                                         ) : (
+                                            <>
+                                              <button onClick={() => { setEditingModId(mod.id); setEditModData({name:mod.name}); }} className="w-8 h-8 bg-brutal-blue text-white border-2 border-black flex items-center justify-center hover:bg-blue-600"><Edit2 className="w-3 h-3 stroke-[3]" /></button>
+                                              <button onClick={() => deleteModule(mod.id, subj.id)} className="w-8 h-8 bg-brutal-orange text-white border-2 border-black flex items-center justify-center hover:bg-orange-600"><Trash2 className="w-3 h-3 stroke-[3]" /></button>
+                                            </>
+                                         )}
+                                       </div>
+                                    </div>
+                                    
+                                    {/* TOPICS ACCORDION */}
+                                    {expandedModule === mod.id && (
+                                      <div className="p-4 space-y-2 bg-slate-100">
+                                        {topics.map(topic => (
+                                          <div key={topic.id} className="flex justify-between items-center group bg-white border-2 border-black p-2">
+                                            {editingTopicId === topic.id ? (
+                                              <input type="text" value={editTopicData.name} onChange={e=>setEditTopicData({name:e.target.value})} className="px-2 py-1 bg-white border-2 border-black text-black font-bold uppercase w-full" />
+                                            ) : (
+                                              <span className="text-sm text-black font-bold uppercase">{topic.name}</span>
+                                            )}
+                                            <div className="flex pl-2">
+                                              {editingTopicId === topic.id ? (
+                                                <div className="flex gap-2">
+                                                  <button onClick={() => updateTopic(topic.id, mod.id)} className="w-6 h-6 bg-brutal-green border-2 border-black flex items-center justify-center"><Check className="w-3 h-3 stroke-[4]"/></button>
+                                                  <button onClick={() => setEditingTopicId(null)} className="w-6 h-6 bg-slate-300 border-2 border-black flex items-center justify-center"><X className="w-3 h-3 stroke-[4]"/></button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  <button onClick={() => { setEditingTopicId(topic.id); setEditTopicData({name:topic.name}); }} className="w-6 h-6 bg-brutal-blue text-white border-2 border-black flex items-center justify-center"><Edit2 className="w-3 h-3 stroke-[3]" /></button>
+                                                  <button onClick={() => deleteTopic(topic.id, mod.id)} className="w-6 h-6 bg-red-600 text-white border-2 border-black flex items-center justify-center"><Trash2 className="w-3 h-3 stroke-[3]" /></button>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                        <div className="flex gap-2 pt-2 border-t-2 border-black border-dashed mt-2">
+                                          <input type="text" placeholder="TOPIC NAME" value={newTopic.name} onChange={e=>setNewTopic({name:e.target.value})} className="flex-1 bg-white border-2 border-black px-3 py-1 font-bold uppercase text-black focus:outline-none text-sm" />
+                                          <button onClick={()=>addTopic(mod.id)} className="bg-brutal-green text-black px-4 font-black uppercase border-2 border-black border-b-4 hover:-translate-y-1 transition-transform">ADD</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {/* Developers Tab */}
-      {activeTab === 'developers' && (
-        <div className="rounded-2xl overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <div className="px-4 py-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center justify-between">
-              <p className="text-white font-semibold">Developers ({developers.length})</p>
-              <button
-                onClick={() => setDevFormOpen(!devFormOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                <Plus className="w-3.5 h-3.5" />
-                Add Developer
-              </button>
-            </div>
-          </div>
-
-          {/* Add developer form */}
-          {devFormOpen && (
-            <div className="px-4 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={newDeveloper.name || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, name: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={newDeveloper.email || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, email: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <input
-                  type="text"
-                  placeholder="Role (e.g., Full Stack Developer)"
-                  value={newDeveloper.role || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, role: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <input
-                  type="text"
-                  placeholder="GitHub Profile"
-                  value={newDeveloper.github_profile || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, github_profile: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <input
-                  type="text"
-                  placeholder="LinkedIn Profile URL"
-                  value={newDeveloper.linkedin_profile || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, linkedin_profile: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50"
-                />
-                <textarea
-                  placeholder="Bio"
-                  value={newDeveloper.bio || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, bio: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50 h-16 resize-none"
-                />
-                <textarea
-                  placeholder="Contributions"
-                  value={newDeveloper.contributions || ''}
-                  onChange={(e) => setNewDeveloper({ ...newDeveloper, contributions: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white bg-slate-700/50 h-16 resize-none"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={addDeveloper}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white"
-                    style={{ background: 'linear-gradient(135deg, #10b981, #34d399)' }}>
-                    Save Developer
-                  </button>
-                  <button
-                    onClick={() => setDevFormOpen(false)}
-                    className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-slate-400"
-                    style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    Cancel
-                  </button>
-                </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Developers list */}
-          <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
-            {developers.length === 0 ? (
-              <div className="px-4 py-8 text-center text-slate-500">No developers added yet</div>
-            ) : (
-              developers.map((dev) => (
-                <div key={dev.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-white font-semibold">{dev.name}</p>
-                    <p className="text-slate-500 text-xs">{dev.role}</p>
+          {/* ──────────────── DEVELOPERS TAB ──────────────── */}
+          {activeTab === 'developers' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between border-b-4 border-black pb-4">
+                <h3 className="text-black font-black text-2xl uppercase">Developer Roster</h3>
+                <button onClick={() => setDevFormOpen(!devFormOpen)} className="brutal-btn bg-black text-white px-6 py-3 flex items-center gap-2"><Plus className="w-5 h-5 stroke-[3]" /> ADD DEV</button>
+              </div>
+              
+              {devFormOpen && (
+                <div className="p-6 bg-brutal-blue border-4 border-black shadow-[4px_4px_0_#000] grid grid-cols-2 gap-4 mb-8">
+                  <input type="text" placeholder="NAME" value={newDeveloper.name||''} onChange={e=>setNewDeveloper({...newDeveloper, name:e.target.value})} className="col-span-2 md:col-span-1 bg-white border-4 border-black px-4 py-3 text-black font-bold uppercase focus:outline-none focus:ring-4 focus:ring-black" />
+                  <input type="email" placeholder="EMAIL" value={newDeveloper.email||''} onChange={e=>setNewDeveloper({...newDeveloper, email:e.target.value})} className="col-span-2 md:col-span-1 bg-white border-4 border-black px-4 py-3 text-black font-bold uppercase focus:outline-none focus:ring-4 focus:ring-black" />
+                  <input type="text" placeholder="ROLE" value={newDeveloper.role||''} onChange={e=>setNewDeveloper({...newDeveloper, role:e.target.value})} className="col-span-2 md:col-span-1 bg-white border-4 border-black px-4 py-3 text-black font-bold uppercase focus:outline-none focus:ring-4 focus:ring-black" />
+                  <input type="text" placeholder="GITHUB URL" value={newDeveloper.github_profile||''} onChange={e=>setNewDeveloper({...newDeveloper, github_profile:e.target.value})} className="col-span-2 md:col-span-1 bg-white border-4 border-black px-4 py-3 text-black font-bold uppercase focus:outline-none focus:ring-4 focus:ring-black" />
+                  <textarea placeholder="BIO" value={newDeveloper.bio||''} onChange={e=>setNewDeveloper({...newDeveloper, bio:e.target.value})} className="col-span-2 h-24 resize-none bg-white border-4 border-black px-4 py-3 text-black font-bold uppercase focus:outline-none focus:ring-4 focus:ring-black" />
+                  <div className="col-span-2 flex justify-end gap-3 mt-2">
+                    <button onClick={()=>setDevFormOpen(false)} className="px-8 py-3 brutal-box border-4 bg-slate-300 text-black font-black uppercase text-lg shadow-none border-black">CANCEL</button>
+                    <button onClick={addDeveloper} className="px-8 py-3 brutal-box border-4 bg-brutal-yellow text-black font-black uppercase text-lg hover:-translate-y-1 transition-transform border-black hover:shadow-[4px_4px_0_#000]">CREATE</button>
                   </div>
-                  <button
-                    onClick={() => deleteDeveloper(dev.id)}
-                    className="p-1.5 rounded-lg transition-all duration-200 hover:bg-red-500/20"
-                    style={{ background: 'rgba(239,68,68,0.1)' }}>
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </button>
                 </div>
-              ))
-            )}
-          </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {developers.map(dev => (
+                  <div key={dev.id} className="brutal-card p-6 bg-white flex flex-col justify-between border-4 border-black">
+                    {editingDevId === dev.id ? (
+                       <div className="space-y-3">
+                         <input type="text" placeholder="NAME" value={editDevData.name||''} onChange={e=>setEditDevData({...editDevData, name:e.target.value})} className="w-full bg-white font-bold uppercase border-4 border-black text-black px-4 py-2" />
+                         <input type="text" placeholder="ROLE" value={editDevData.role||''} onChange={e=>setEditDevData({...editDevData, role:e.target.value})} className="w-full bg-white font-bold uppercase border-4 border-black text-black px-4 py-2" />
+                         <div className="flex gap-2 pt-2">
+                           <button onClick={()=>updateDeveloper(dev.id)} className="flex-1 brutal-box shadow-none border-4 bg-brutal-green border-black py-2 text-black font-black uppercase hover:bg-[#00ffb5]">SAVE</button>
+                           <button onClick={()=>setEditingDevId(null)} className="brutal-box shadow-none border-4 bg-slate-300 border-black w-14 flex items-center justify-center hover:bg-slate-400"><X className="w-6 h-6 stroke-[3]"/></button>
+                         </div>
+                       </div>
+                    ) : (
+                      <>
+                        <div className="mb-4">
+                          <div className="flex justify-between items-start border-b-4 border-black pb-3">
+                            <div>
+                               <h4 className="text-black font-black text-2xl uppercase leading-none">{dev.name}</h4>
+                               <p className="text-white text-xs font-black uppercase bg-brutal-blue border-2 border-black px-2 mt-2 py-0.5 inline-block">{dev.role}</p>
+                            </div>
+                            <div className="flex gap-2">
+                               <button onClick={()=>{setEditingDevId(dev.id); setEditDevData(dev);}} className="w-10 h-10 brutal-box border-2 border-black flex items-center justify-center bg-brutal-pink hover:bg-pink-400 shadow-none"><Edit2 className="w-5 h-5 stroke-[3]" /></button>
+                               <button onClick={()=>deleteDeveloper(dev.id)} className="w-10 h-10 brutal-box border-2 border-black flex items-center justify-center bg-red-600 text-white hover:bg-red-700 shadow-none"><Trash2 className="w-5 h-5 stroke-[3]" /></button>
+                            </div>
+                          </div>
+                          {dev.bio && <p className="text-black/80 font-bold text-sm mt-4 uppercase leading-relaxed">{dev.bio}</p>}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ──────────────── SETTINGS TAB ──────────────── */}
+          {activeTab === 'settings' && (
+            <div className="brutal-box p-12 text-center bg-slate-200 border-dashed border-4 border-black/50 shadow-none">
+               <div className="w-24 h-24 border-4 border-black bg-white flex items-center justify-center mx-auto mb-6 transform rotate-12">
+                 <Settings className="w-12 h-12 text-black stroke-[3]" />
+               </div>
+               <h2 className="text-black font-black text-3xl uppercase tracking-tighter mb-4">SYSTEM CONFIGURATION</h2>
+               <p className="text-black/70 font-bold uppercase max-w-sm mx-auto p-4 border-2 border-black bg-white">
+                 Colleges, Branches, and Global Site variables are managed implicitly through the unified backend configuration in this phase.
+               </p>
+            </div>
+          )}
+
         </div>
-      )}
-
-      {/* Settings Tab */}
-      {activeTab === 'settings' && (
-        <div className="rounded-2xl p-4 space-y-4"
-          style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-          <h3 className="text-white font-semibold mb-4">System Settings</h3>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 rounded-xl"
-              style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-              <div>
-                <p className="text-white font-semibold text-sm">Admin Mode</p>
-                <p className="text-slate-500 text-xs">You have admin privileges enabled</p>
-              </div>
-              <div className="w-10 h-6 rounded-full flex items-center pl-0.5"
-                style={{ background: '#10b981' }}>
-                <div className="w-5 h-5 rounded-full bg-white transition-all" />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div>
-                <p className="text-white font-semibold text-sm">Data Backup</p>
-                <p className="text-slate-500 text-xs">Last backup: Never</p>
-              </div>
-              <button
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition-all duration-200"
-                style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                Backup Now
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div>
-                <p className="text-white font-semibold text-sm">User Audit Log</p>
-                <p className="text-slate-500 text-xs">Monitor user activities</p>
-              </div>
-              <button
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-400 transition-all duration-200"
-                style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)' }}>
-                View
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 rounded-xl"
-            style={{ background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.2)' }}>
-            <p className="text-orange-400 font-semibold text-sm mb-2">⚠️ Danger Zone</p>
-            <p className="text-slate-400 text-xs mb-3">
-              Irreversible actions that will permanently affect the system.
-            </p>
-            <button
-              className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-red-500 transition-all duration-200"
-              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
-              Reset All Data
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

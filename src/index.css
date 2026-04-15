@@ -11,102 +11,99 @@ html, body {
 }
 
 body {
-  background-color: #09091a;
-  color: white;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Colorful Neo-Brutalism background */
+  background-color: #fcebd1; 
+  background-image: radial-gradient(#000000 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: #000;
+  font-family: 'Space Grotesk', 'Inter', -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Mobile safe area support */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-.safe-top {
-  padding-top: env(safe-area-inset-top, 0px);
-}
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
 /* Scrollbars */
-::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #ffeccf; border-left: 2px solid #000; }
+::-webkit-scrollbar-thumb { background: #000; }
 
-/* Page transitions */
+/* Transitions */
 .page-enter {
-  animation: pageIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: pageSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15); /* Slightly bouncy */
 }
 
-@keyframes pageIn {
-  from { opacity: 0; transform: translateY(12px); }
+@keyframes pageSlideIn {
+  from { opacity: 0; transform: translateY(15px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Glow animations */
-@keyframes glowPulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
-  50%       { box-shadow: 0 0 40px rgba(99, 102, 241, 0.65); }
+/* --- BRUTALIST TOKENS --- */
+
+/* Base sharp container */
+.brutal-box {
+  background: #fff;
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  border-radius: 8px; /* Slight rounding keeps it modern but raw */
 }
 
-@keyframes timerGlow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(99,102,241,0.4)); }
-  50%       { filter: drop-shadow(0 0 22px rgba(99,102,241,0.85)); }
+/* Hard interactive elements */
+.brutal-btn {
+  border: 3px solid #000;
+  box-shadow: 4px 4px 0px #000;
+  border-radius: 8px;
+  transition: all 0.1s ease;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
-@keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+.brutal-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-6px); }
+/* Floating brutalism */
+.brutal-card {
+  border: 3px solid #000;
+  box-shadow: 6px 6px 0px #000;
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+.brutal-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000;
 }
 
-.glow-pulse { animation: glowPulse 2.5s ease-in-out infinite; }
-.timer-running { animation: timerGlow 2s ease-in-out infinite; }
-.float-anim { animation: float 3s ease-in-out infinite; }
-
-/* Glass card */
-.glass {
-  background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.08);
+.brutal-card:active {
+  transform: translate(6px, 6px) !important;
+  box-shadow: 0px 0px 0px #000 !important;
 }
 
-.glass-strong {
-  background: rgba(255,255,255,0.07);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255,255,255,0.12);
+/* Colors palette tokens */
+.bg-brutal-yellow { background-color: #ffe600; }
+.bg-brutal-pink { background-color: #ff90e8; }
+.bg-brutal-blue { background-color: #23a0ff; color: white; }
+.bg-brutal-green { background-color: #00e5a3; }
+.bg-brutal-orange { background-color: #ff5722; color: white;}
+.bg-brutal-lilac { background-color: #d1c4e9; }
+
+/* Continuous Marquee Animation */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #818cf8, #a78bfa, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.animate-marquee {
+  animation: marquee 15s linear infinite;
+  display: flex;
+  white-space: nowrap;
 }
 
-/* Shimmer effect for achievements */
-.shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-  background-size: 200% auto;
-  animation: shimmer 2s linear infinite;
-}
-
-/* Bottom nav safe area */
-.bottom-nav-safe {
-  padding-bottom: max(env(safe-area-inset-bottom), 8px);
-}
-
-/* Input focus glow */
+/* Remove default focus outlines, we'll use sharp borders */
 input:focus, select:focus {
   outline: none;
 }
