@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Plus, X, Users, BookOpen, Settings, Code, ChevronDown, ChevronRight, Edit2, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Users, BookOpen, Settings, Code, ChevronDown, ChevronRight, Edit2, Check, Flame } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 import type { Developer } from '@/types';
@@ -59,13 +59,14 @@ interface UniversityTopic {
 
 export const Admin: React.FC = () => {
   const { navigate, isAdmin } = useApp();
-  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'developers' | 'settings'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'templates' | 'developers' | 'settings' | 'feedback'>('users');
   const [users, setUsers] = useState<UserData[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
   const [subjects, setSubjects] = useState<UniversitySubject[]>([]);
   const [modules, setModules] = useState<UniversityModule[]>([]);
   const [topics, setTopics] = useState<UniversityTopic[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User edit state
@@ -129,7 +130,35 @@ export const Admin: React.FC = () => {
     fetchUsers();
     fetchDevelopers();
     fetchUniversities();
+    fetchFeedbacks();
   }, []);
+
+  const fetchFeedbacks = async () => {
+    const { data } = await supabase
+      .from('feedbacks')
+      .select('*, profiles(full_name, reg_no)')
+      .order('created_at', { ascending: false });
+    if (data) setFeedbacks(data);
+  };
+
+  const toggleFeatured = async (id: string, currentStatus: boolean) => {
+    try {
+      await supabase.from('feedbacks').update({ is_featured: !currentStatus }).eq('id', id);
+      fetchFeedbacks();
+    } catch(err) {
+      console.error(err);
+    }
+  };
+
+  const deleteFeedback = async (id: string) => {
+    if (!confirm('Destroy this feedback?')) return;
+    try {
+      await supabase.from('feedbacks').delete().eq('id', id);
+      fetchFeedbacks();
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -288,6 +317,7 @@ export const Admin: React.FC = () => {
             { id: 'users', label: 'USERS', icon: Users, color: 'bg-brutal-blue' }, 
             { id: 'templates', label: 'TEMPLATES', icon: BookOpen, color: 'bg-brutal-yellow' }, 
             { id: 'developers', label: 'DEVELOPERS', icon: Code, color: 'bg-brutal-pink' }, 
+            { id: 'feedback', label: 'FEEDBACK', icon: Flame, color: 'bg-brutal-green' },
             { id: 'settings', label: 'CONFIG', icon: Settings, color: 'bg-slate-300' } 
           ].map((tab) => (
             <button
@@ -613,6 +643,48 @@ export const Admin: React.FC = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ──────────────── FEEDBACK TAB ──────────────── */}
+          {activeTab === 'feedback' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-6 pb-2 border-b-4 border-black">
+                <h3 className="text-black font-black text-2xl uppercase">User Intel / Feedback ({feedbacks.length})</h3>
+                <button onClick={fetchFeedbacks} className="px-4 py-2 brutal-btn bg-black text-white text-xs font-black uppercase">REFRESH DB</button>
+              </div>
+
+              {feedbacks.length === 0 ? (
+                 <div className="p-8 text-center border-4 border-black border-dashed bg-slate-100">
+                    <p className="font-black text-black text-xl uppercase">NO FEEDBACK COLLECTED</p>
+                 </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {feedbacks.map(fb => (
+                     <div key={fb.id} className={`brutal-card p-4 border-4 border-black bg-white flex flex-col md:flex-row gap-4 items-start md:items-center justify-between ${fb.is_featured ? 'shadow-[8px_8px_0_#ff90e8]' : 'shadow-[4px_4px_0_#000]'}`}>
+                        <div className="flex-1">
+                          <p className="text-lg font-black uppercase text-black mb-2 leading-tight">"{fb.content}"</p>
+                          <div className="flex items-center gap-2">
+                             <span className="text-xs font-bold text-white bg-black px-2 py-1 uppercase">{fb.profiles?.full_name || 'UNKNOWN'}</span>
+                             <span className="text-xs font-bold text-black border-2 border-black px-2 py-0.5 bg-slate-100 uppercase">{fb.profiles?.reg_no || 'UNKNOWN'}</span>
+                             <span className="text-xs font-bold text-black uppercase">{new Date(fb.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 w-full md:w-auto">
+                           <button 
+                             onClick={() => toggleFeatured(fb.id, fb.is_featured)}
+                             className={`flex-1 md:w-auto px-4 py-3 border-2 border-black font-black uppercase text-xs flex items-center justify-center gap-2 transition-colors ${fb.is_featured ? 'bg-brutal-pink text-black' : 'bg-slate-200 text-black hover:bg-slate-300'}`}
+                           >
+                             {fb.is_featured ? '★ FEATURED' : '☆ FEATURE'}
+                           </button>
+                           <button onClick={() => deleteFeedback(fb.id)} className="w-12 h-12 flex items-center justify-center border-2 border-black bg-red-600 text-white hover:bg-red-700">
+                              <Trash2 className="w-5 h-5 stroke-[3]" />
+                           </button>
+                        </div>
+                     </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { Auth } from '@/components/Auth';
 import { Layout } from '@/components/Layout';
+import { Landing } from '@/components/Landing';
 
 const AppInner: React.FC = () => {
   const { view, loading } = useApp();
@@ -37,6 +38,10 @@ const AppInner: React.FC = () => {
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
+  }
+
+  if (view.type === 'landing') {
+    return <Landing />;
   }
 
   if (view.type === 'auth') {

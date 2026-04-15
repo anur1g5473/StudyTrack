@@ -122,9 +122,23 @@ export interface StudySession {
   created_at: string;
 }
 
+export interface Feedback {
+  id: string;
+  user_id: string;
+  content: string;
+  is_featured: boolean;
+  created_at: string;
+  // joined fields (optional)
+  profiles?: {
+    full_name: string;
+    branch: string;
+  };
+}
+
 export type NavTab = 'home' | 'subjects' | 'focus' | 'stats' | 'profile';
 
 export type AppView =
+  | { type: 'landing' }
   | { type: 'auth' }
   | { type: 'home' }
   | { type: 'subjects' }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X, Code } from 'lucide-react';
+import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X, Code, Key } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 
@@ -73,6 +73,11 @@ export const Profile: React.FC = () => {
   // ── Edit state ──────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // ── Password state ──────────────────────────────────────────────
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
 
   const [fullName, setFullName]       = useState(profile?.full_name ?? '');
   const [branch, setBranch]           = useState(profile?.branch ?? '');
@@ -286,6 +291,53 @@ export const Profile: React.FC = () => {
         })}
       </div>
 
+      {/* Feedback Submission */}
+      <div className="brutal-box p-5 bg-brutal-blue border-4 border-black shadow-[6px_6px_0_#000]">
+        <h3 className="text-white font-black text-xl mb-4 uppercase tracking-tight flex items-center gap-2">
+           <Flame className="w-6 h-6 text-brutal-yellow" /> TRANSMIT INTEL
+        </h3>
+        <div className="space-y-3">
+           <textarea 
+             placeholder="REPORT BUGS, SUGGEST FEATURES, OR LEAVE A REVIEW..."
+             id="feedback-input"
+             className="w-full h-24 p-3 bg-white border-4 border-black font-bold uppercase text-black resize-none focus:outline-none focus:ring-4 focus:ring-brutal-pink"
+           ></textarea>
+           <button 
+             onClick={async (e) => {
+               const input = document.getElementById('feedback-input') as HTMLTextAreaElement;
+               const val = input?.value;
+               if (!val || val.trim().length === 0) return;
+               
+               const btn = e.currentTarget;
+               const originalText = btn.innerText;
+               btn.innerText = 'TRANSMITTING...';
+               btn.disabled = true;
+
+               const { error } = await supabase.from('feedbacks').insert({
+                 user_id: userId,
+                 content: val.trim()
+               });
+
+               if (!error) {
+                 input.value = '';
+                 btn.innerText = 'TRANSMITTED!';
+                 setTimeout(() => {
+                   btn.innerText = originalText;
+                   btn.disabled = false;
+                 }, 2000);
+               } else {
+                 alert('Transmission failed: ' + error.message);
+                 btn.innerText = originalText;
+                 btn.disabled = false;
+               }
+             }}
+             className="w-full py-3 brutal-btn bg-brutal-yellow text-black font-black uppercase flex items-center justify-center border-4 border-black"
+           >
+             SEND SECURE TRANSMISSION
+           </button>
+        </div>
+      </div>
+
       {/* Achievements */}
       <div className="brutal-box p-5 bg-white border-4 border-black shadow-[6px_6px_0_#000]">
         <h3 className="text-black font-black text-xl mb-5 flex items-center gap-2 uppercase underline decoration-4 underline-offset-4">
@@ -336,6 +388,48 @@ export const Profile: React.FC = () => {
       >
         <Code className="w-6 h-6 stroke-[3]" /> SYSTEM ARCHITECTS
       </button>
+
+      {/* Change Password */}
+      {!changingPassword ? (
+        <button
+          onClick={() => setChangingPassword(true)}
+          className="w-full font-black text-xl py-4 brutal-btn flex items-center justify-center gap-3 bg-white border-4 border-black text-black hover:bg-slate-100"
+        >
+          <Key className="w-6 h-6 stroke-[3]" /> CHANGE SECURITY KEY
+        </button>
+      ) : (
+        <div className="brutal-box p-4 bg-slate-100 border-4 border-black shadow-[4px_4px_0_#000]">
+           <div className="flex justify-between items-center mb-3">
+             <span className="font-black uppercase text-black">NEW CLEARANCE KEY:</span>
+             <button onClick={() => {setChangingPassword(false); setNewPassword('');}} className="w-8 h-8 brutal-box bg-slate-300 flex items-center justify-center"><X className="w-5 h-5 stroke-[3]"/></button>
+           </div>
+           <input 
+             type="password" 
+             placeholder="ENTER NEW PASSWORD"
+             value={newPassword}
+             onChange={(e) => setNewPassword(e.target.value)}
+             className="w-full px-4 py-3 border-4 border-black font-bold uppercase text-black focus:outline-none mb-3 bg-white"
+           />
+           <button 
+             onClick={async () => {
+               if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters.');
+               setSavingPassword(true);
+               const { error } = await supabase.auth.updateUser({ password: newPassword });
+               setSavingPassword(false);
+               if (error) alert('Error: ' + error.message);
+               else {
+                 alert('SECURITY KEY UPDATED SUCCESSFULLY.');
+                 setChangingPassword(false);
+                 setNewPassword('');
+               }
+             }}
+             disabled={savingPassword}
+             className="w-full py-3 brutal-btn bg-brutal-green text-black font-black uppercase flex justify-center items-center"
+           >
+             {savingPassword ? "UPDATING..." : "UPDATE CREDENTIALS"}
+           </button>
+        </div>
+      )}
 
       {/* Logout */}
       <button

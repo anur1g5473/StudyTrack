@@ -34,7 +34,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [colleges, setColleges] = useState<College[]>([]);
   const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [view, setView] = useState<AppView>({ type: 'auth' });
+  const [view, setView] = useState<AppView>({ type: 'landing' });
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchProfile = useCallback(async (uid: string) => {
@@ -222,7 +222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setColleges([]);
         setAcademicYears([]);
         setAchievements([]);
-        setView({ type: 'auth' });
+        setView({ type: 'landing' }); // Start on landing instead of auth
       }
     });
 
