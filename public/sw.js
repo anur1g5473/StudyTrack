@@ -1,183 +1,233 @@
-const CACHE_NAME = 'studytrack-v1';
-const STATIC_ASSETS = [
+/**
+ * StudyTrack Service Worker — Offline-First PWA
+ *
+ * Strategy:
+ *  - Static assets (JS/CSS/HTML)  : Cache-First (pre-cached on install)
+ *  - App shell (/)                : Network-First, cached fallback
+ *  - Google Fonts                 : Stale-While-Revalidate
+ *  - Supabase REST/Auth           : Network-Only (real-time accuracy)
+ *  - Background Sync              : Flush offline mutation queue on reconnect
+ */
+
+const CACHE_VERSION = 'studytrack-v3';
+const FONT_CACHE    = 'studytrack-fonts-v1';
+
+// Assets baked into the Vite single-file build
+const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.svg',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/icon-192x192-maskable.png',
+  '/icons/icon-512x512-maskable.png',
 ];
 
-// Install event - cache essential assets
+// ── Install: pre-cache app shell ──────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        console.log('Could not cache all assets');
-      });
-    })
+    caches.open(CACHE_VERSION).then((cache) =>
+      cache.addAll(PRECACHE_URLS).catch((err) =>
+        console.warn('[SW] Pre-cache partial failure:', err)
+      )
+    ).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// ── Activate: purge old caches ────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.filter((k) => k !== CACHE_VERSION && k !== FONT_CACHE)
+            .map((k) => caches.delete(k))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+// ── Fetch: route-aware caching strategies ─────────────────────
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // 1. Skip non-GET
+  if (event.request.method !== 'GET') return;
+
+  // 2. Supabase REST / Auth / Realtime — Network Only
+  //    Let the app handle failures; never serve stale auth data.
+  if (url.hostname.includes('supabase.co')) {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
         })
-      );
+      )
+    );
+    return;
+  }
+
+  // 3. Google Fonts — Stale-While-Revalidate
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    event.respondWith(staleWhileRevalidate(event.request, FONT_CACHE));
+    return;
+  }
+
+  // 4. App shell / HTML navigation — Network-First, cache fallback
+  if (event.request.mode === 'navigate' || url.pathname === '/') {
+    event.respondWith(networkFirstWithCacheFallback(event.request));
+    return;
+  }
+
+  // 5. Static JS/CSS assets — Cache-First (Vite hashes guarantee freshness)
+  if (
+    url.pathname.match(/\.(js|css|woff2?|ttf|otf|png|svg|ico|webp|jpg)$/)
+  ) {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
+  // 6. Everything else — Network-First
+  event.respondWith(networkFirstWithCacheFallback(event.request));
+});
+
+// ── Background Sync ───────────────────────────────────────────
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'studytrack-sync') {
+    event.waitUntil(notifyClientsToSync());
+  }
+});
+
+// Tell the open app window to flush its queue
+async function notifyClientsToSync() {
+  const allClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of allClients) {
+    client.postMessage({ type: 'FLUSH_QUEUE' });
+  }
+}
+
+// ── Caching Helpers ───────────────────────────────────────────
+
+/** Cache-First: serve from cache, update cache in background. */
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  try {
+    const fresh = await fetch(request);
+    if (fresh && fresh.status === 200) {
+      const cache = await caches.open(CACHE_VERSION);
+      cache.put(request, fresh.clone());
+    }
+    return fresh;
+  } catch {
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+/** Network-First: try network, fall back to cache, then offline page. */
+async function networkFirstWithCacheFallback(request) {
+  try {
+    const fresh = await fetch(request);
+    if (fresh && fresh.status === 200) {
+      const cache = await caches.open(CACHE_VERSION);
+      cache.put(request, fresh.clone());
+    }
+    return fresh;
+  } catch {
+    const cached = await caches.match(request) ?? await caches.match('/');
+    return cached ?? offlinePage();
+  }
+}
+
+/** Stale-While-Revalidate: serve cache immediately, update cache in background. */
+async function staleWhileRevalidate(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cached = await cache.match(request);
+  const networkFetch = fetch(request).then((fresh) => {
+    if (fresh && fresh.status === 200) cache.put(request, fresh.clone());
+    return fresh;
+  }).catch(() => cached);
+  return cached ?? networkFetch;
+}
+
+/** Minimal offline fallback page — rendered entirely inline. */
+function offlinePage() {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>StudyTrack — Offline</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Inter',system-ui,sans-serif;
+      background:radial-gradient(ellipse at 15% 25%,#1e1040 0%,#0d0d1f 50%,#000310 100%);
+      color:#e2e8f0;
+      display:flex;align-items:center;justify-content:center;
+      min-height:100vh;padding:24px;
+    }
+    .card{
+      max-width:360px;width:100%;text-align:center;
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.2);
+      border-bottom-color:rgba(255,255,255,0.05);
+      border-radius:24px;
+      box-shadow:0 8px 32px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.16);
+      padding:40px 32px;
+      backdrop-filter:blur(20px);
+    }
+    .icon{font-size:56px;margin-bottom:20px}
+    h1{font-size:22px;font-weight:700;margin-bottom:10px;letter-spacing:-0.02em}
+    p{color:rgba(255,255,255,0.55);font-size:14px;line-height:1.7;margin-bottom:24px}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.35);
+      border-radius:999px;padding:8px 18px;font-size:13px;font-weight:600;
+      color:#c4b5fd;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:50%;
+      background:#f87171;box-shadow:0 0 8px #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>You're Offline</h1>
+    <p>StudyTrack is caching your data for offline access. Any changes you make will sync automatically when your connection is restored.</p>
+    <span class="pill"><span class="dot"></span> No Connection</span>
+  </div>
+</body>
+</html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+// ── Push Notifications ────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  const data = event.data?.json?.() ?? { title: 'StudyTrack', body: 'You have a new notification' };
+  event.waitUntil(
+    self.registration.showNotification(data.title ?? 'StudyTrack', {
+      body: data.body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-192x192.png',
+      tag: 'studytrack',
     })
   );
-  self.clients.claim();
 });
 
-// Fetch event - network first, fallback to cache
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-
-  // Skip non-GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
-
-  // Skip Supabase API calls - always go to network
-  if (request.url.includes('supabase')) {
-    event.respondWith(fetch(request));
-    return;
-  }
-
-  // For everything else: try network first, fallback to cache
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // Cache successful responses
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // Fall back to cache if network fails
-        return caches.match(request).then((response) => {
-          return response || createOfflinePage();
-        });
-      })
-  );
-});
-
-// Handle push notifications
-self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data?.text() || 'New notification from StudyTrack',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-192x192.png',
-    tag: 'studytrack-notification',
-    requireInteraction: false,
-  };
-
-  event.waitUntil(
-    self.registration.showNotification('StudyTrack', options)
-  );
-});
-
-// Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((clientList) => {
-      // If app is already open, focus it
-      if (clientList.length > 0) {
-        return clientList[0].focus();
-      }
-      // Otherwise, open the app
+    clients.matchAll({ type: 'window' }).then((list) => {
+      if (list.length > 0) return list[0].focus();
       return clients.openWindow('/');
     })
   );
 });
-
-// Create offline fallback page
-function createOfflinePage() {
-  return new Response(
-    `<!DOCTYPE html>
-    <html>
-      <head>
-        <title>StudyTrack - Offline</title>
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0a0a1a;
-            color: #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-          }
-          .container {
-            text-align: center;
-            max-width: 400px;
-          }
-          .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-          }
-          h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            font-weight: 600;
-          }
-          p {
-            color: #94a3b8;
-            font-size: 14px;
-            line-height: 1.6;
-          }
-          .tips {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 12px;
-            text-align: left;
-          }
-          .tips h3 {
-            font-size: 14px;
-            margin-bottom: 10px;
-            color: #a78bfa;
-          }
-          .tips ul {
-            font-size: 12px;
-            color: #cbd5e1;
-            list-position: inside;
-          }
-          .tips li {
-            margin-bottom: 8px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="icon">📡</div>
-          <h1>You're Offline</h1>
-          <p>StudyTrack requires an internet connection to sync your data with the server. Your session data is saved locally while offline.</p>
-          <div class="tips">
-            <h3>What you can do:</h3>
-            <ul>
-              <li>View your cached subjects and notes</li>
-              <li>Review your progress offline</li>
-              <li>Check your achievement list</li>
-            </ul>
-          </div>
-        </div>
-      </body>
-    </html>`,
-    {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
-    }
-  );
-}

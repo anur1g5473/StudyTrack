@@ -12,36 +12,27 @@ const UniversityCard: React.FC<{
 }> = ({ template, onSelect }) => (
   <button
     onClick={onSelect}
-    className="w-full text-left rounded-2xl p-5 transition-all duration-200 active:scale-98"
-    style={{
-      background: `${template.color}0d`,
-      border: `1px solid ${template.color}30`,
-    }}
-    onMouseEnter={(e) => e.currentTarget.style.border = `1px solid ${template.color}60`}
-    onMouseLeave={(e) => e.currentTarget.style.border = `1px solid ${template.color}30`}
+    className="w-full text-left p-5 transition-all brutal-card bg-white border-4 border-black"
   >
     <div className="flex items-center gap-4">
-      <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl shrink-0"
-        style={{ background: `${template.color}18`, border: `1px solid ${template.color}30` }}>
+      <div className="w-14 h-14 bg-brutal-yellow border-4 border-black flex items-center justify-center text-3xl shrink-0 shadow-[4px_4px_0_#000]">
         {template.emoji}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white font-bold text-base">{template.name}</p>
-        <p className="text-slate-500 text-sm mt-0.5">{template.location}</p>
+        <p className="text-black font-black text-xl uppercase tracking-tighter">{template.name}</p>
+        <p className="text-black/70 font-bold text-sm mt-0.5 uppercase">{template.location}</p>
         <div className="flex items-center gap-3 mt-2">
-          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: `${template.color}18`, color: template.color }}>
-            {template.subjects.length} subjects
+          <span className="text-xs font-black px-2 py-0.5 bg-black text-white border-2 border-black uppercase">
+            {template.subjects.length} SUBJECTS
           </span>
-          <span className="text-slate-600 text-xs">
-            {template.subjects.reduce((s, sub) => s + sub.modules.length, 0)} modules •{' '}
-            {template.subjects.reduce((s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0)} topics
+          <span className="text-black font-bold text-xs uppercase">
+            {template.subjects.reduce((s, sub) => s + sub.modules.length, 0)} MODS •{' '}
+            {template.subjects.reduce((s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0)} TOPICS
           </span>
         </div>
       </div>
-      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: `${template.color}18`, color: template.color }}>
-        <ChevronDown className="w-4 h-4" style={{ transform: 'rotate(-90deg)' }} />
+      <div className="w-10 h-10 border-4 border-black bg-brutal-pink text-black flex items-center justify-center shrink-0">
+        <ChevronDown className="w-6 h-6 stroke-[3]" style={{ transform: 'rotate(-90deg)' }} />
       </div>
     </div>
   </button>
@@ -83,7 +74,6 @@ const SubjectPicker: React.FC<{
     for (const idx of Array.from(selected)) {
       const sub = template.subjects[idx];
 
-      // 1. Insert subject
       const { data: subjectRow, error: subErr } = await supabase
         .from('subjects')
         .insert({ user_id: userId, name: sub.name, icon: sub.icon, color: sub.color })
@@ -92,7 +82,6 @@ const SubjectPicker: React.FC<{
 
       if (subErr || !subjectRow) continue;
 
-      // 2. Insert modules + topics
       for (const mod of sub.modules) {
         const { data: moduleRow, error: modErr } = await supabase
           .from('modules')
@@ -122,20 +111,18 @@ const SubjectPicker: React.FC<{
   if (done) {
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-16">
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center"
-          style={{ background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.3)', boxShadow: '0 0 30px rgba(52,211,153,0.2)' }}>
-          <Check className="w-10 h-10 text-emerald-400" />
+        <div className="w-24 h-24 brutal-box bg-brutal-green flex items-center justify-center border-4 border-black rotate-3 shadow-[8px_8px_0_#000]">
+          <Check className="w-12 h-12 text-black stroke-[4]" />
         </div>
-        <div className="text-center">
-          <p className="text-white text-xl font-bold">{selected.size} subject{selected.size > 1 ? 's' : ''} added!</p>
-          <p className="text-slate-500 text-sm mt-1">All modules and topics are ready.</p>
+        <div className="text-center brutal-box p-6 bg-white shadow-[6px_6px_0_#000]">
+          <p className="text-black text-2xl font-black uppercase mb-2 leading-none">{selected.size} SUBJECT{selected.size > 1 ? 'S' : ''} ACQUIRED!</p>
+          <p className="text-black/60 text-sm font-bold uppercase">All modules and topics injected into your curriculum.</p>
         </div>
         <button
           onClick={onDone}
-          className="font-bold px-8 py-3.5 rounded-2xl text-white transition-all"
-          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 8px 25px rgba(99,102,241,0.4)' }}
+          className="font-black px-8 py-4 brutal-btn bg-black text-white text-xl uppercase flex items-center gap-2 mt-4 hover:bg-slate-800"
         >
-          Go to Subjects →
+          ENTER DASHBOARD <ArrowLeft className="w-6 h-6 stroke-[3] rotate-180" />
         </button>
       </div>
     );
@@ -144,65 +131,51 @@ const SubjectPicker: React.FC<{
   return (
     <div className="flex flex-col gap-4 pb-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 bg-white p-4 brutal-box border-4 border-black shadow-[6px_6px_0_#000]">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+          className="w-12 h-12 brutal-btn bg-brutal-blue flex items-center justify-center text-white"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-6 h-6 stroke-[3]" />
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="text-white font-bold text-lg">{template.emoji} {template.name}</h2>
-          <p className="text-slate-500 text-xs">Choose subjects to add</p>
+          <h2 className="text-black font-black text-2xl uppercase tracking-tighter leading-none">{template.emoji} {template.name}</h2>
+          <p className="text-black/60 font-bold text-xs uppercase mt-1">Select curriculum payload to extract</p>
         </div>
       </div>
 
       {/* Select all / clear */}
-      <div className="flex items-center justify-between">
-        <span className="text-slate-500 text-sm">
-          {selected.size} of {template.subjects.length} selected
+      <div className="flex items-center justify-between brutal-box bg-slate-100 p-3 border-4 border-black shadow-none">
+        <span className="text-black font-black text-sm uppercase">
+          {selected.size} OF {template.subjects.length} SELECTED
         </span>
         <div className="flex gap-2">
-          <button onClick={selectAll} className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
-            style={{ background: 'rgba(99,102,241,0.14)', color: '#818cf8' }}>
-            All
+          <button onClick={selectAll} className="text-xs font-black px-4 py-2 bg-black text-brutal-yellow border-2 border-black uppercase hover:-translate-y-0.5 transition-transform">
+            SELECT ALL
           </button>
-          <button onClick={clearAll} className="text-xs font-semibold px-3 py-1.5 rounded-xl transition-all"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748b' }}>
-            Clear
+          <button onClick={clearAll} className="text-xs font-black px-4 py-2 bg-white text-black border-2 border-black uppercase hover:-translate-y-0.5 transition-transform">
+            CLEAR
           </button>
         </div>
       </div>
 
       {/* Subject list */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {template.subjects.map((sub, idx) => {
           const isSelected = selected.has(idx);
           const isExpanded = expanded.has(idx);
           const topicCount = sub.modules.reduce((s, m) => s + m.topics.length, 0);
 
           return (
-            <div key={idx} className="rounded-2xl overflow-hidden transition-all duration-200"
-              style={{
-                background: isSelected ? `${sub.color}0d` : 'rgba(255,255,255,0.02)',
-                border: isSelected ? `1px solid ${sub.color}45` : '1px solid rgba(255,255,255,0.07)',
-              }}>
+            <div key={idx} className={`brutal-box overflow-hidden transition-all duration-200 border-4 border-black ${isSelected ? 'bg-brutal-yellow shadow-[6px_6px_0_#000] translate-x-[-2px] translate-y-[-2px]' : 'bg-white shadow-[2px_2px_0_#000]'}`}>
               {/* Subject row */}
               <div className="flex items-center gap-3 p-4">
                 {/* Checkbox */}
                 <button
                   onClick={() => toggle(idx)}
-                  className="w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all duration-200"
-                  style={isSelected ? {
-                    background: sub.color,
-                    borderColor: sub.color,
-                    boxShadow: `0 0 12px ${sub.color}55`,
-                  } : {
-                    borderColor: 'rgba(255,255,255,0.15)',
-                  }}
+                  className={`w-8 h-8 border-4 border-black flex items-center justify-center shrink-0 transition-all duration-200 ${isSelected ? 'bg-black text-brutal-green' : 'bg-white'}`}
                 >
-                  {isSelected && <Check className="w-4 h-4 text-white" />}
+                  {isSelected && <Check className="w-4 h-4 stroke-[4]" />}
                 </button>
 
                 {/* Icon + info */}
@@ -210,40 +183,36 @@ const SubjectPicker: React.FC<{
                   onClick={() => toggleExpand(idx)}
                   className="flex-1 flex items-center gap-3 text-left min-w-0"
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                    style={{ background: `${sub.color}18` }}>
+                  <div className="w-12 h-12 border-4 border-black flex items-center justify-center text-2xl shrink-0 bg-white rotate-3">
                     {sub.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">{sub.name}</p>
-                    <p className="text-slate-600 text-xs mt-0.5">
-                      {sub.modules.length} modules • {topicCount} topics
+                    <p className="text-black font-black text-xl uppercase leading-none">{sub.name}</p>
+                    <p className="text-black/60 font-bold text-xs mt-1 uppercase">
+                      {sub.modules.length} MODULES • {topicCount} TOPICS
                     </p>
                   </div>
-                  {isExpanded
-                    ? <ChevronUp className="w-4 h-4 text-slate-600 shrink-0" />
-                    : <ChevronDown className="w-4 h-4 text-slate-600 shrink-0" />}
+                  <div className="w-8 h-8 border-2 border-black bg-white flex items-center justify-center">
+                    {isExpanded ? <ChevronUp className="w-5 h-5 text-black stroke-[3]" /> : <ChevronDown className="w-5 h-5 text-black stroke-[3]" />}
+                  </div>
                 </button>
               </div>
 
               {/* Expanded module preview */}
               {isExpanded && (
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div className="bg-slate-100 border-t-4 border-black">
                   {sub.modules.map((mod, mi) => (
-                    <div key={mi} className="px-4 py-2.5"
-                      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                      <p className="text-slate-300 text-xs font-semibold mb-1.5">{mod.name}</p>
-                      <div className="flex flex-wrap gap-1">
+                    <div key={mi} className="px-4 py-3 border-b-2 border-black border-dashed last:border-b-0">
+                      <p className="text-black text-sm font-black uppercase mb-2">{mod.name}</p>
+                      <div className="flex flex-wrap gap-2">
                         {mod.topics.slice(0, 4).map((t, ti) => (
-                          <span key={ti} className="text-[10px] px-2 py-0.5 rounded-full text-slate-500"
-                            style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <span key={ti} className="text-[10px] px-2 py-1 font-bold bg-white border-2 border-black text-black uppercase">
                             {t}
                           </span>
                         ))}
                         {mod.topics.length > 4 && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full"
-                            style={{ background: `${sub.color}18`, color: sub.color }}>
-                            +{mod.topics.length - 4} more
+                          <span className="text-[10px] px-2 py-1 font-black bg-brutal-pink border-2 border-black text-black uppercase">
+                            +{mod.topics.length - 4} MORE
                           </span>
                         )}
                       </div>
@@ -257,20 +226,15 @@ const SubjectPicker: React.FC<{
       </div>
 
       {/* Add button */}
-      <div className="sticky bottom-20 pt-2">
+      <div className="sticky bottom-20 pt-4 pb-4 bg-transparent z-10">
         <button
           onClick={handleAdd}
           disabled={selected.size === 0 || adding}
-          className="w-full font-bold py-4 rounded-2xl flex items-center justify-center gap-2 disabled:opacity-40 transition-all duration-200"
-          style={{
-            background: selected.size > 0 ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.05)',
-            color: selected.size > 0 ? 'white' : '#475569',
-            boxShadow: selected.size > 0 ? '0 8px 25px rgba(99,102,241,0.4)' : 'none',
-          }}
+          className="w-full font-black py-5 brutal-btn text-xl uppercase disabled:opacity-50 flex items-center justify-center gap-3 transition-colors bg-brutal-green text-black hover:bg-[#00e0a0]"
         >
           {adding
-            ? <><Loader2 className="w-4 h-4 animate-spin" /> Adding subjects...</>
-            : <><BookOpen className="w-4 h-4" /> Add {selected.size > 0 ? `${selected.size} ` : ''}Subject{selected.size !== 1 ? 's' : ''}</>}
+            ? <><Loader2 className="w-6 h-6 animate-spin stroke-[3]" /> INJECTING DATA...</>
+            : <><BookOpen className="w-6 h-6 stroke-[3]" /> IMPORT {selected.size > 0 ? `${selected.size} ` : ''}SUBJECT{selected.size !== 1 ? 'S' : ''}</>}
         </button>
       </div>
     </div>
@@ -293,43 +257,40 @@ export const Templates: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-4">
+    <div className="flex flex-col gap-6 pb-4 pt-2">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 bg-brutal-blue border-4 border-black p-4 brutal-box shadow-[6px_6px_0_#000]">
         <button
           onClick={() => navigate({ type: 'subjects' })}
-          className="w-10 h-10 rounded-2xl flex items-center justify-center transition-all active:scale-90"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+          className="w-12 h-12 brutal-btn bg-white hover:bg-slate-100 flex items-center justify-center text-black"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-6 h-6 stroke-[3]" />
         </button>
         <div>
-          <h2 className="text-white font-bold text-lg flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-yellow-400" /> University Templates
+          <h2 className="text-white font-black text-2xl uppercase tracking-tighter leading-none flex items-center gap-2">
+            <Sparkles className="w-6 h-6 text-brutal-yellow fill-brutal-yellow stroke-[2]" /> TEMPLATES
           </h2>
-          <p className="text-slate-500 text-xs">Pick your university and add subjects instantly</p>
+          <p className="text-white font-bold text-xs uppercase mt-1 drop-shadow-[1px_1px_0_#000]">Prebuilt curriculum masters</p>
         </div>
       </div>
 
       {/* Banner */}
-      <div className="rounded-2xl p-4"
-        style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
-        <p className="text-slate-300 text-sm leading-relaxed">
-          Select your university below, choose which subjects to add, and all modules & topics will be created automatically. ✨
+      <div className="brutal-box p-5 bg-brutal-yellow border-4 border-black shadow-[4px_4px_0_#000]">
+        <p className="text-black font-black text-sm uppercase leading-tight">
+          Select a master template below to instantly copy all required modules and topics directly into your personal dashboard!
         </p>
       </div>
 
       {/* University grid */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {UNIVERSITY_TEMPLATES.map((t) => (
           <UniversityCard key={t.id} template={t} onSelect={() => setChosenTemplate(t)} />
         ))}
       </div>
 
       {/* More coming soon */}
-      <div className="rounded-2xl p-4 text-center"
-        style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.08)' }}>
-        <p className="text-slate-600 text-sm">More universities coming soon 🏫</p>
+      <div className="brutal-box p-6 text-center bg-slate-200 border-dashed border-4 border-black shadow-none mt-4">
+        <p className="text-black font-black text-sm uppercase">More universities transmitting soon...</p>
       </div>
     </div>
   );

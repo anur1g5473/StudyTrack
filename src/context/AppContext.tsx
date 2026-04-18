@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { idbGet, idbSet } from '@/lib/offlineDB';
+import { flushOfflineQueue } from '@/lib/syncQueue';
 import type { Profile, Subject, AppView, Developer, Branch, College, AcademicYear, Achievement } from '@/types';
 
 interface AppContextType {
   userId: string | null;
   profile: Profile | null;
   loading: boolean;
+  isOnline: boolean;
   subjects: Subject[];
   developers: Developer[];
   branches: Branch[];
@@ -17,9 +20,10 @@ interface AppContextType {
   refreshSystemConfig: () => Promise<void>;
   view: AppView;
   navigate: (v: AppView) => void;
-  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: boolean;
+  theme: 'brutal' | 'glass';
+  setTheme: (t: 'brutal' | 'glass') => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -28,6 +32,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -36,90 +41,177 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [view, setView] = useState<AppView>({ type: 'landing' });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [theme, setTheme] = useState<'brutal' | 'glass'>('brutal');
+  const userIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (theme === 'glass') {
+      document.body.setAttribute('data-theme', 'glass');
+    } else {
+      document.body.removeAttribute('data-theme');
+    }
+    // Persist theme preference
+    idbSet('theme', theme);
+  }, [theme]);
+
+  // Restore theme from IndexedDB on startup
+  useEffect(() => {
+    idbGet<'brutal' | 'glass'>('theme').then((saved) => {
+      if (saved === 'brutal' || saved === 'glass') setTheme(saved);
+    });
+  }, []);
+
+  // ── Online / Offline tracking + auto-sync ─────────────────
+  useEffect(() => {
+    const goOnline = async () => {
+      setIsOnline(true);
+      try {
+        const { synced } = await flushOfflineQueue();
+        // Refresh data from server after sync
+        if (synced > 0 && userIdRef.current) {
+          fetchProfile(userIdRef.current);
+          fetchSubjects(userIdRef.current);
+        }
+      } catch (e) {
+        console.error('[StudyTrack] Sync flush error', e);
+      }
+    };
+    const goOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Service Worker message: FLUSH_QUEUE (from background sync) ──
+  useEffect(() => {
+    const onMessage = async (e: MessageEvent) => {
+      if (e.data?.type === 'FLUSH_QUEUE') {
+        const { synced } = await flushOfflineQueue();
+        if (synced > 0 && userIdRef.current) {
+          fetchProfile(userIdRef.current);
+          fetchSubjects(userIdRef.current);
+        }
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', onMessage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── App Visibility: refresh data when app is foregrounded ──
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine && userIdRef.current) {
+        fetchProfile(userIdRef.current);
+        fetchSubjects(userIdRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchProfile = useCallback(async (uid: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', uid)
-        .single();
-        
-      if (data) {
-        setProfile(data as Profile);
-        setIsAdmin(((data as Profile).reg_no || '').toUpperCase() === '25BYB0101');
-      } else if (error && error.code === 'PGRST116') {
-        // PGRST116 means zero rows found. Auto-heal the database!
-        const session = await supabase.auth.getSession();
-        const user = session.data.session?.user;
-        if (user) {
-          const regNo = user.user_metadata?.reg_no || user.email?.split('@')[0].toUpperCase();
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({ id: uid, reg_no: regNo })
-            .select('*')
-            .single();
-            
-          if (newProfile && !insertError) {
-            setProfile(newProfile as Profile);
-            setIsAdmin(((newProfile as Profile).reg_no || '').toUpperCase() === '25BYB0101');
-          } else if (insertError) {
-            window.alert('Auto-Heal Insert Error: ' + insertError.message + ' | Code: ' + insertError.code);
+    // Always try network first
+    if (navigator.onLine) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', uid)
+          .single();
+
+        if (data) {
+          setProfile(data as Profile);
+          setIsAdmin(((data as Profile).reg_no || '').toUpperCase() === '25BYB0101');
+          // Cache for offline
+          await idbSet(`profile:${uid}`, data);
+          return;
+        } else if (error && error.code === 'PGRST116') {
+          // Auto-heal: create missing profile row
+          const session = await supabase.auth.getSession();
+          const user = session.data.session?.user;
+          if (user) {
+            const regNo = user.user_metadata?.reg_no || user.email?.split('@')[0].toUpperCase();
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .insert({ id: uid, reg_no: regNo })
+              .select('*')
+              .single();
+            if (newProfile) {
+              setProfile(newProfile as Profile);
+              setIsAdmin(((newProfile as Profile).reg_no || '').toUpperCase() === '25BYB0101');
+              await idbSet(`profile:${uid}`, newProfile);
+            }
           }
+          return;
         }
-      } else if (error) {
-        window.alert('Generic Profile Fetch Error: ' + error.message + ' | Code: ' + error.code);
-      } else {
-        window.alert('Profile Fetch returned absolutely no data and no error!');
+      } catch {
+        // Fall through to offline cache below
       }
-    } catch (err: any) {
-      console.error('Error in fetchProfile:', err);
-      window.alert('Profile Fetch Error: ' + err.message);
+    }
+    // Offline fallback: serve from IndexedDB
+    const cached = await idbGet<Profile>(`profile:${uid}`);
+    if (cached) {
+      setProfile(cached);
+      setIsAdmin((cached.reg_no || '').toUpperCase() === '25BYB0101');
     }
   }, []);
 
   const fetchSubjects = useCallback(async (uid: string) => {
-    const { data: subjectsData } = await supabase
-      .from('subjects')
-      .select('*')
-      .eq('user_id', uid)
-      .order('created_at', { ascending: true });
-
-    if (!subjectsData) return;
-
-    const enriched: Subject[] = await Promise.all(
-      subjectsData.map(async (s) => {
-        const { data: moduleRows } = await supabase
-          .from('modules')
-          .select('id')
-          .eq('subject_id', s.id);
-
-        const moduleIds = (moduleRows ?? []).map((m: { id: string }) => m.id);
-
-        if (moduleIds.length === 0) {
-          return { ...s, total_topics: 0, completed_topics: 0, total_study_minutes: 0 } as Subject;
-        }
-
-        const { data: topics } = await supabase
-          .from('topics')
-          .select('is_completed, study_minutes')
+    if (navigator.onLine) {
+      try {
+        const { data: subjectsData } = await supabase
+          .from('subjects')
+          .select('*')
           .eq('user_id', uid)
-          .in('module_id', moduleIds);
+          .order('created_at', { ascending: true });
 
-        const total = topics?.length ?? 0;
-        const completed = topics?.filter((t) => t.is_completed).length ?? 0;
-        const mins = topics?.reduce((sum: number, t: { study_minutes: number }) => sum + (t.study_minutes ?? 0), 0) ?? 0;
+        if (subjectsData) {
+          const enriched: Subject[] = await Promise.all(
+            subjectsData.map(async (s) => {
+              const { data: moduleRows } = await supabase
+                .from('modules')
+                .select('id')
+                .eq('subject_id', s.id);
 
-        return {
-          ...s,
-          total_topics: total,
-          completed_topics: completed,
-          total_study_minutes: mins,
-        } as Subject;
-      })
-    );
+              const moduleIds = (moduleRows ?? []).map((m: { id: string }) => m.id);
+              if (moduleIds.length === 0) {
+                return { ...s, total_topics: 0, completed_topics: 0, total_study_minutes: 0 } as Subject;
+              }
 
-    setSubjects(enriched);
+              const { data: topics } = await supabase
+                .from('topics')
+                .select('is_completed, study_minutes')
+                .eq('user_id', uid)
+                .in('module_id', moduleIds);
+
+              return {
+                ...s,
+                total_topics: topics?.length ?? 0,
+                completed_topics: topics?.filter((t) => t.is_completed).length ?? 0,
+                total_study_minutes: topics?.reduce((sum: number, t: { study_minutes: number }) => sum + (t.study_minutes ?? 0), 0) ?? 0,
+              } as Subject;
+            })
+          );
+          setSubjects(enriched);
+          // Cache for offline access
+          await idbSet(`subjects:${uid}`, enriched);
+          return;
+        }
+      } catch {
+        // Fall through to offline cache
+      }
+    }
+    // Offline fallback
+    const cached = await idbGet<Subject[]>(`subjects:${uid}`);
+    if (cached) setSubjects(cached);
   }, []);
 
   const refreshSubjects = useCallback(async () => {
@@ -186,34 +278,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [fetchSystemConfig]);
 
   useEffect(() => {
-    // Race the session check with a timeout so the app never hangs on a blank screen
-    const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUserId(session.user.id);
-        fetchProfile(session.user.id);
-        fetchSubjects(session.user.id);
-        fetchDevelopers();
-        fetchSystemConfig();
-        setView({ type: 'home' });
+    const init = async (uid: string) => {
+      userIdRef.current = uid;
+      // Immediately try to load from cache so app opens instantly
+      const cachedProfile = await idbGet<Profile>(`profile:${uid}`);
+      if (cachedProfile) {
+        setProfile(cachedProfile);
+        setIsAdmin((cachedProfile.reg_no || '').toUpperCase() === '25BYB0101');
       }
+      const cachedSubjects = await idbGet<Subject[]>(`subjects:${uid}`);
+      if (cachedSubjects) setSubjects(cachedSubjects);
+
+      // Then hydrate from network (if online)
+      fetchProfile(uid);
+      fetchSubjects(uid);
+      fetchDevelopers();
+      fetchSystemConfig();
+      setView({ type: 'home' });
+    };
+
+    const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) init(session.user.id);
     });
 
     const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 4000));
-
-    // Whichever finishes first, we stop loading
-    Promise.race([sessionPromise, timeoutPromise]).finally(() => {
-      setLoading(false);
-    });
+    Promise.race([sessionPromise, timeoutPromise]).finally(() => setLoading(false));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUserId(session.user.id);
-        fetchProfile(session.user.id);
-        fetchSubjects(session.user.id);
-        fetchDevelopers();
-        fetchSystemConfig();
-        setView({ type: 'home' });
+        init(session.user.id);
       } else {
+        userIdRef.current = null;
         setUserId(null);
         setProfile(null);
         setSubjects([]);
@@ -222,7 +317,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setColleges([]);
         setAcademicYears([]);
         setAchievements([]);
-        setView({ type: 'landing' }); // Start on landing instead of auth
+        setView({ type: 'landing' });
       }
     });
 
@@ -244,6 +339,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId,
         profile,
         loading,
+        isOnline,
         subjects,
         developers,
         branches,
@@ -258,6 +354,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         signOut,
         refreshProfile,
         isAdmin,
+        theme,
+        setTheme,
       }}
     >
       {children}

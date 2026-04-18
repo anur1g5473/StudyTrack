@@ -65,7 +65,7 @@ export const Landing: React.FC = () => {
              <BookOpen className="w-12 h-12 text-black stroke-[3]" />
           </div>
           <h1 className="text-6xl md:text-8xl font-black text-black uppercase tracking-tighter leading-none mb-4" style={{textShadow: '4px 4px 0 #fff, -2px -2px 0 #00e5a3'}}>
-            STUDYTRACK
+            STUDY<br/>TRACK
           </h1>
           <p className="text-xl md:text-2xl font-black uppercase bg-black text-white px-4 py-2 inline-block transform -rotate-1 border-4 border-brutal-pink">
             THE ULTIMATE EXAM PREP COMPANION

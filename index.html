@@ -15,14 +15,23 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon-192.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          // Check for SW updates when app comes back online
+          window.addEventListener('online', () => {
+            reg.update();
+            // Register background sync to flush offline queue via SW
+            if ('sync' in reg) {
+              reg.sync.register('studytrack-sync').catch(() => {});
+            }
+          });
+        }).catch(() => {
           console.log('Service Worker registration failed');
         });
       }

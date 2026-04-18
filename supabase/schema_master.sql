@@ -362,5 +362,57 @@ UPDATE auth.users SET email_confirmed_at = NOW(), updated_at = NOW()
 WHERE email LIKE '%@studytrack.app' AND email_confirmed_at IS NULL;
 
 -- ============================================================
+-- 9. FEEDBACK SYSTEM & LANDING ANALYTICS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.feedbacks (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_featured BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.feedbacks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view featured feedback" 
+    ON public.feedbacks FOR SELECT USING (is_featured = true);
+
+CREATE POLICY "Users can insert their own feedback" 
+    ON public.feedbacks FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own feedback" 
+    ON public.feedbacks FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Admins can view all feedbacks" 
+    ON public.feedbacks FOR SELECT USING (public.is_admin_user());
+
+CREATE POLICY "Admins can update feedbacks" 
+    ON public.feedbacks FOR UPDATE USING (public.is_admin_user());
+    
+CREATE POLICY "Admins can delete feedbacks" 
+    ON public.feedbacks FOR DELETE USING (public.is_admin_user());
+
+-- Global Aggregations RPC
+CREATE OR REPLACE FUNCTION get_global_stats()
+RETURNS json LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+    total_users_count integer;
+    total_minutes_sum integer;
+    result json;
+BEGIN
+    SELECT count(id), COALESCE(sum(total_study_minutes), 0)
+    INTO total_users_count, total_minutes_sum
+    FROM public.profiles;
+
+    result := json_build_object(
+        'total_users', total_users_count,
+        'total_minutes', total_minutes_sum
+    );
+
+    RETURN result;
+END;
+$$;
+
+-- ============================================================
 -- DONE! System is completely fully configured and ready.
 -- ============================================================

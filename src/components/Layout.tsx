@@ -13,7 +13,7 @@ import { Admin } from './Admin';
 import { useApp } from '@/context/AppContext';
 
 export const Layout: React.FC = () => {
-  const { view } = useApp();
+  const { view, theme, isOnline } = useApp();
 
   const renderContent = () => {
     switch (view.type) {
@@ -38,21 +38,36 @@ export const Layout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-transparent">
+    <div className="min-h-screen flex flex-col bg-transparent relative z-0">
+      
+      {/* Ambient background for glass mode */}
+      {theme === 'glass' && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+          <div className="absolute -top-[10%] -left-[10%] w-[50vw] h-[50vw] bg-indigo-500/20 rounded-full blur-3xl mix-blend-screen animate-blob"></div>
+          <div className="absolute top-[20%] -right-[10%] w-[45vw] h-[45vw] bg-purple-500/20 rounded-full blur-3xl mix-blend-screen animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-[10%] left-[20%] w-[55vw] h-[55vw] bg-pink-500/20 rounded-full blur-3xl mix-blend-screen animate-blob animation-delay-4000"></div>
+        </div>
+      )}
+
       {/* Top App Bar */}
-      <header className="sticky top-0 z-40 safe-top"
-        style={{
-          background: '#fff',
-          borderBottom: '3px solid #000',
-        }}>
+      <header className={`sticky top-0 z-40 safe-top ${theme === 'glass' ? 'bg-transparent backdrop-blur-md border-b border-white/10' : 'bg-white border-b-[3px] border-black'}`}>
         <div className={`mx-auto px-4 py-3.5 flex items-center justify-between transition-all duration-300 ${view.type === 'admin' ? 'max-w-7xl' : 'max-w-md'}`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 flex items-center justify-center brutal-box bg-brutal-pink">
+            <div className={`w-8 h-8 flex items-center justify-center ${theme === 'glass' ? 'bg-indigo-500/30 rounded-xl border border-indigo-400/50' : 'brutal-box bg-brutal-pink'}`}>
               <span className="text-base leading-none">⚡</span>
             </div>
-            <span className="font-extrabold text-black text-xl tracking-tight uppercase">StudyTrack</span>
+            <span className={`font-extrabold text-xl tracking-tight uppercase ${theme === 'glass' ? 'text-white' : 'text-black'}`}>StudyTrack</span>
           </div>
-          <ViewTitle />
+          <div className="flex items-center gap-2">
+            {/* Connectivity indicator */}
+            {!isOnline && (
+              <span className="flex items-center gap-1.5 text-[10px] font-black uppercase px-2 py-1 bg-amber-400 text-black border-2 border-black rounded-full animate-pulse">
+                <span className="w-1.5 h-1.5 bg-black rounded-full" />
+                OFFLINE
+              </span>
+            )}
+            <ViewTitle />
+          </div>
         </div>
       </header>
 

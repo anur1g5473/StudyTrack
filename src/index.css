@@ -104,6 +104,371 @@ body {
 }
 
 /* Remove default focus outlines, we'll use sharp borders */
-input:focus, select:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
 }
+
+/* ===================================================
+   GLASSMORPHISM THEME — Dark Luxury / Dark Mode
+   Brualism = Light Mode | Glassmorphism = Dark Mode
+   =================================================== */
+
+/* 1. BODY & BACKGROUND */
+body[data-theme="glass"] {
+  /* Deep, saturated navy-to-purple — the 'wanted' feel */
+  background: radial-gradient(ellipse at 15% 25%, #1e1040 0%, #0d0d1f 50%, #000310 100%) !important;
+  background-attachment: fixed !important;
+  color: #ffffff !important;
+  font-family: 'Inter', 'Poppins', system-ui, sans-serif !important;
+}
+
+/* Hide the brutalist polka-dot body background */
+body[data-theme="glass"]::before {
+  display: none !important;
+}
+
+/* Hide Marquee banner in glass mode */
+body[data-theme="glass"] .animate-marquee,
+body[data-theme="glass"] .overflow-hidden.border-y-4 {
+  display: none !important;
+}
+
+/* 2. TOP HEADER BAR */
+body[data-theme="glass"] header {
+  background: rgba(15, 15, 26, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+body[data-theme="glass"] header .brutal-box {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+body[data-theme="glass"] header span.font-extrabold {
+  color: #ffffff !important;
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  text-transform: none !important;
+}
+body[data-theme="glass"] header .brutal-box.bg-brutal-yellow {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255,255,255,0.5) !important;
+  border-radius: 999px !important;
+  font-size: 0.7rem !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* 3. BRUTAL TOKENS → GLASS CARDS
+   Premium: lighter bg (0.08) + 20px blur + 20% white border = diamond-edge look */
+body[data-theme="glass"] .brutal-box,
+body[data-theme="glass"] .brutal-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  /* Diamond-edge: bright top/left, dark bottom/right */
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+  border-right-color: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 24px !important;
+  /* Heavy depth shadow + inner top glow */
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3) !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
+body[data-theme="glass"] .brutal-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
+  border-right-color: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 18px !important;
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  transform: none !important;
+  font-family: 'Poppins', 'Inter', sans-serif !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+}
+
+/* Hover / Active States */
+body[data-theme="glass"] .brutal-card:hover,
+body[data-theme="glass"] .brutal-box:hover {
+  background: rgba(255, 255, 255, 0.11) !important;
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 20px 48px 0 rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+body[data-theme="glass"] .brutal-btn:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 12px 32px 0 rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+body[data-theme="glass"] .brutal-btn:active,
+body[data-theme="glass"] .brutal-card:active {
+  transform: scale(0.97) !important;
+}
+
+/* 4. HIERARCHY — Hero card is the crown jewel, most elevated */
+body[data-theme="glass"] .brutal-box.bg-brutal-blue {
+  background: rgba(99, 102, 241, 0.18) !important;
+  backdrop-filter: blur(28px) !important;
+  -webkit-backdrop-filter: blur(28px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  border-bottom-color: rgba(99, 102, 241, 0.08) !important;
+  box-shadow:
+    0 0 80px rgba(99, 102, 241, 0.30),
+    0 8px 32px 0 rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  border-radius: 28px !important;
+}
+/* The inner content box inside the hero — must be transparent */
+body[data-theme="glass"] .brutal-box.bg-brutal-blue > .brutal-box,
+body[data-theme="glass"] .brutal-box.bg-brutal-blue .brutal-box {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  transform: none !important;
+}
+
+/* 5. COLOR OVERRIDES — neon-tinted glass with glowing icon containers */
+body[data-theme="glass"] .bg-brutal-yellow {
+  background: rgba(234, 179, 8, 0.15) !important;
+  border-color: rgba(234, 179, 8, 0.25) !important;
+  color: #fef08a !important;
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.20), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-brutal-pink {
+  background: rgba(236, 72, 153, 0.15) !important;
+  border-color: rgba(236, 72, 153, 0.25) !important;
+  color: #fbcfe8 !important;
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.25), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-brutal-green {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  color: #6ee7b7 !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-brutal-orange {
+  background: rgba(249, 115, 22, 0.15) !important;
+  border-color: rgba(249, 115, 22, 0.25) !important;
+  color: #fed7aa !important;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.20), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-brutal-lilac {
+  background: rgba(168, 85, 247, 0.15) !important;
+  border-color: rgba(168, 85, 247, 0.25) !important;
+  color: #e9d5ff !important;
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.30), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-red-500,
+body[data-theme="glass"] .bg-red-600 {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.25) !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.20), 0 8px 32px 0 rgba(0,0,0,0.8) !important;
+}
+body[data-theme="glass"] .bg-white          { background: rgba(255, 255, 255, 0.06) !important; }
+body[data-theme="glass"] .bg-black          { background: rgba(0, 0, 0, 0.50) !important; }
+body[data-theme="glass"] .bg-slate-50,
+body[data-theme="glass"] .bg-slate-100,
+body[data-theme="glass"] .bg-slate-200,
+body[data-theme="glass"] .bg-slate-300      { background: rgba(255, 255, 255, 0.04) !important; }
+
+/* Quick Action icon containers — glowing in their own color */
+body[data-theme="glass"] .grid.grid-cols-2 > .brutal-btn .brutal-box.bg-brutal-yellow { box-shadow: 0 0 16px rgba(234, 179, 8, 0.5) !important; }
+body[data-theme="glass"] .grid.grid-cols-2 > .brutal-btn .brutal-box.bg-brutal-pink   { box-shadow: 0 0 16px rgba(236, 72, 153, 0.5) !important; }
+body[data-theme="glass"] .grid.grid-cols-2 > .brutal-btn .brutal-box.bg-brutal-green  { box-shadow: 0 0 16px rgba(16, 185, 129, 0.5) !important; }
+body[data-theme="glass"] .grid.grid-cols-2 > .brutal-btn .brutal-box.bg-brutal-blue   { box-shadow: 0 0 16px rgba(99, 102, 241, 0.5) !important; }
+body[data-theme="glass"] .grid.grid-cols-2 > .brutal-btn .brutal-box.bg-black         { box-shadow: 0 0 16px rgba(220, 38, 38, 0.5) !important; }
+
+/* 6. TYPOGRAPHY — Poppins/Inter, Royal weight, readable contrast */
+body[data-theme="glass"] * {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif !important;
+}
+body[data-theme="glass"] .text-black,
+body[data-theme="glass"] .text-black\/90,
+body[data-theme="glass"] .text-black\/80,
+body[data-theme="glass"] .text-black\/70,
+body[data-theme="glass"] .text-black\/60 {
+  color: #ffffff !important;
+}
+/* Subtext — muted, ~55% white */
+body[data-theme="glass"] .font-semibold.text-xs,
+body[data-theme="glass"] .font-bold.text-xs,
+body[data-theme="glass"] p.text-xs {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+/* Greeting line (e.g. 'Good Evening') — medium weight, wider tracking */
+body[data-theme="glass"] p.text-sm.font-black.uppercase,
+body[data-theme="glass"] p.text-black.text-sm.font-black {
+  font-weight: 500 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+/* User ID and Section Headers — heavy, unmissable */
+body[data-theme="glass"] h2.font-black,
+body[data-theme="glass"] h3.font-black {
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #ffffff !important;
+}
+/* All .font-black elements — bold, never washed out */
+body[data-theme="glass"] .font-black {
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+/* .font-semibold / .font-bold — 600 weight, white */
+body[data-theme="glass"] .font-semibold,
+body[data-theme="glass"] .font-bold {
+  font-weight: 600 !important;
+  color: #ffffff !important;
+}
+
+/* 7. BORDERS */
+body[data-theme="glass"] .border-black,
+body[data-theme="glass"] .border-black\/50,
+body[data-theme="glass"] .border-black\/30 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="glass"] .border-white {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="glass"] .divide-black > * + * {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+/* Strip thick brutalist borders */
+body[data-theme="glass"] .border-4,
+body[data-theme="glass"] .border-8 {
+  border-width: 1px !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="glass"] .border-2 {
+  border-width: 1px !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 8. BOX SHADOWS — strip all hard brutal offsets */
+body[data-theme="glass"] [class*="shadow-["] {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 9. PROGRESS BARS — vibrant neon green, glowing */
+body[data-theme="glass"] [class*="w-full h-8"] {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: none !important;
+  border-radius: 999px !important;
+  height: 6px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+body[data-theme="glass"] [class*="h-full border-r-2"] {
+  /* Neon green — vibrant and unmissable */
+  background: #00ff9f !important;
+  border: none !important;
+  border-radius: 999px !important;
+  background-image: none !important;
+  box-shadow: 0 0 12px rgba(0, 255, 159, 0.8), 0 0 4px rgba(0, 255, 159, 0.6) !important;
+}
+
+/* Strip rotate transforms */
+body[data-theme="glass"] [class*="rotate-"],
+body[data-theme="glass"] [class*="-rotate-"] {
+  transform: none !important;
+}
+
+/* Strip brutal text shadows */
+body[data-theme="glass"] [style*="textShadow"],
+body[data-theme="glass"] [style*="text-shadow"] {
+  text-shadow: none !important;
+}
+
+/* Remove underline decorations */
+body[data-theme="glass"] .underline {
+  text-decoration: none !important;
+}
+
+/* Strip inline radial dot backgrounds */
+body[data-theme="glass"] [style*="backgroundImage: 'radial-gradient"],
+body[data-theme="glass"] [style*="backgroundImage: `radial-gradient"] {
+  background-image: none !important;
+}
+
+/* 10. FORM CONTROLS */
+body[data-theme="glass"] input,
+body[data-theme="glass"] textarea,
+body[data-theme="glass"] select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  color: #fff !important;
+  font-family: 'Inter', 'Poppins', sans-serif !important;
+  transition: all 0.2s ease !important;
+}
+body[data-theme="glass"] input:focus,
+body[data-theme="glass"] textarea:focus,
+body[data-theme="glass"] select:focus {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+body[data-theme="glass"] input::placeholder,
+body[data-theme="glass"] textarea::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* 11. FLOATING BOTTOM NAV */
+.glass-bottom-nav {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(min(448px, 100vw) - 32px);
+  z-index: 50;
+  background: rgba(15, 15, 26, 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 28px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  padding: 4px 6px;
+}
+
+/* Solid brutalist bottom nav */
+.brutal-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #fff;
+  border-top: 3px solid #000;
+}
+
+/* Blob animations (used for layout ambience in glass mode) */
+@keyframes blob {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob { animation: blob 7s infinite; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }

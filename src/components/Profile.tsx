@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X, Code, Key } from 'lucide-react';
+import { User, Clock, Flame, BookOpen, LogOut, Shield, Target, Trophy, Edit3, Check, X, Code, Key, Moon, Sun } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
 
@@ -59,7 +59,7 @@ const ChipSelector: React.FC<ChipSelectorProps> = ({
 };
 
 export const Profile: React.FC = () => {
-  const { profile, subjects, signOut, userId, refreshProfile, navigate, branches, colleges, academicYears, achievements: dbAchievements, isAdmin } = useApp();
+  const { profile, subjects, signOut, userId, refreshProfile, navigate, branches, colleges, academicYears, achievements: dbAchievements, isAdmin, theme, setTheme } = useApp();
 
   const YEAR_OPTIONS = academicYears.length > 0 ? academicYears.map(y => y.display_name) : ['1st Year', '2nd Year', '3rd Year', '4th Year'];
   const BRANCH_OPTIONS = branches.length > 0 ? [...branches.map(b => b.name), 'Other'] : ['CSE', 'ECE', 'EEE', 'IT', 'Mechanical', 'Civil', 'Chemical', 'Other'];
@@ -380,6 +380,18 @@ export const Profile: React.FC = () => {
             <Shield className="w-6 h-6 stroke-[3]" /> OVERRIDE DASHBOARD
          </button>
       )}
+
+      {/* Theme Toggle */}
+      <button
+        onClick={() => setTheme(theme === 'brutal' ? 'glass' : 'brutal')}
+        className="w-full font-black text-xl py-4 brutal-btn flex items-center justify-center gap-3 bg-brutal-lilac text-black border-4 border-black transition-all"
+      >
+        {theme === 'brutal' ? (
+          <><Sun className="w-6 h-6 stroke-[3]" /> ENABLE GLASSMORPHISM</>
+        ) : (
+          <><Moon className="w-6 h-6 stroke-[3]" /> ENGAGE BRUTALISM</>
+        )}
+      </button>
 
       {/* Developers */}
       <button

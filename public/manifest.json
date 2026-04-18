@@ -1,14 +1,20 @@
 {
+  "id": "/",
   "name": "StudyTrack — Exam Prep Companion",
   "short_name": "StudyTrack",
   "description": "Track your exam preparation, manage subjects, modules and topics, use Pomodoro focus timer, and monitor your progress.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait-primary",
   "theme_color": "#0a0a1a",
   "background_color": "#0a0a1a",
   "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "handle_links": "preferred",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",
