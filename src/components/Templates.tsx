@@ -5,68 +5,57 @@ import { supabase } from '@/lib/supabase';
 
 // ── Types matching DB shape ───────────────────────────────────
 interface DBTopic   { id: string; name: string; order_index: number; }
-interface DBModule  { id: string; name: string; order_index: number; topics: DBTopic[]; }
-interface DBSubject { id: string; name: string; icon: string; color: string; order_index: number; modules: DBModule[]; }
+interface DBModule  { id: string; name: string; order_index: number; university_topics: DBTopic[]; }
+interface DBSubject { id: string; name: string; icon: string; color: string; order_index: number; university_modules: DBModule[]; }
 interface DBTemplate {
   id: string; name: string; short_name: string; location: string;
   emoji: string; color: string; description: string;
-  subjects: DBSubject[];
+  university_subjects: DBSubject[];
 }
 
-// ── Fetch all university templates from Supabase ──────────────
-async function fetchTemplates(): Promise<DBTemplate[]> {
-  const { data: universities, error } = await supabase
+// Normalised shape used in render (topics are flat array per module)
+interface NModule  { id: string; name: string; order_index: number; topics: DBTopic[]; }
+interface NSubject { id: string; name: string; icon: string; color: string; order_index: number; modules: NModule[]; }
+interface NTemplate extends Omit<DBTemplate, 'university_subjects'> { subjects: NSubject[]; }
+
+// ── Single-query fetch (no nested loops) ──────────────────────
+async function fetchTemplates(): Promise<NTemplate[]> {
+  const { data, error } = await supabase
     .from('universities')
-    .select('*')
-    .eq('is_active', true)
+    .select(`
+      id, name, short_name, location, emoji, color, description,
+      university_subjects (
+        id, name, icon, color, order_index,
+        university_modules (
+          id, name, order_index,
+          university_topics ( id, name, order_index )
+        )
+      )
+    `)
     .order('name');
 
-  if (error || !universities) return [];
+  if (error || !data) return [];
 
-  const templates: DBTemplate[] = [];
-
-  for (const uni of universities) {
-    const { data: subjects } = await supabase
-      .from('university_subjects')
-      .select('*')
-      .eq('university_id', uni.id)
-      .eq('is_active', true)
-      .order('order_index');
-
-    const enrichedSubjects: DBSubject[] = [];
-
-    for (const subj of subjects ?? []) {
-      const { data: modules } = await supabase
-        .from('university_modules')
-        .select('*')
-        .eq('university_subject_id', subj.id)
-        .eq('is_active', true)
-        .order('order_index');
-
-      const enrichedModules: DBModule[] = [];
-
-      for (const mod of modules ?? []) {
-        const { data: topics } = await supabase
-          .from('university_topics')
-          .select('*')
-          .eq('university_module_id', mod.id)
-          .eq('is_active', true)
-          .order('order_index');
-
-        enrichedModules.push({ ...mod, topics: topics ?? [] });
-      }
-
-      enrichedSubjects.push({ ...subj, modules: enrichedModules });
-    }
-
-    templates.push({ ...uni, subjects: enrichedSubjects });
-  }
-
-  return templates;
+  return (data as unknown as DBTemplate[]).map((uni) => ({
+    ...uni,
+    subjects: [...(uni.university_subjects ?? [])]
+      .sort((a, b) => a.order_index - b.order_index)
+      .map((subj) => ({
+        ...subj,
+        modules: [...(subj.university_modules ?? [])]
+          .sort((a, b) => a.order_index - b.order_index)
+          .map((mod) => ({
+            ...mod,
+            topics: [...(mod.university_topics ?? [])]
+              .sort((a, b) => a.order_index - b.order_index),
+          })),
+      })),
+  }));
 }
 
+
 // ── University card ───────────────────────────────────────────
-const UniversityCard: React.FC<{ template: DBTemplate; onSelect: () => void }> = ({ template, onSelect }) => {
+const UniversityCard: React.FC<{ template: NTemplate; onSelect: () => void }> = ({ template, onSelect }) => {
   const totalTopics = template.subjects.reduce(
     (s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0
   );
@@ -102,7 +91,7 @@ const UniversityCard: React.FC<{ template: DBTemplate; onSelect: () => void }> =
 
 // ── Subject picker ────────────────────────────────────────────
 const SubjectPicker: React.FC<{
-  template: DBTemplate;
+  template: NTemplate;
   onBack: () => void;
   onDone: () => void;
 }> = ({ template, onBack, onDone }) => {
@@ -330,9 +319,9 @@ const SubjectPicker: React.FC<{
 // ── Main Templates page ───────────────────────────────────────
 export const Templates: React.FC = () => {
   const { navigate } = useApp();
-  const [templates, setTemplates]           = useState<DBTemplate[]>([]);
+  const [templates, setTemplates]           = useState<NTemplate[]>([]);
   const [loading, setLoading]               = useState(true);
-  const [chosenTemplate, setChosenTemplate] = useState<DBTemplate | null>(null);
+  const [chosenTemplate, setChosenTemplate] = useState<NTemplate | null>(null);
 
   const load = async () => {
     setLoading(true);
