@@ -63,9 +63,10 @@ export const Admin: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
-  const [subjects, setSubjects] = useState<UniversitySubject[]>([]);
-  const [modules, setModules] = useState<UniversityModule[]>([]);
-  const [topics, setTopics] = useState<UniversityTopic[]>([]);
+  // Keyed by parent ID so multiple accordions can be open simultaneously
+  const [subjectMap, setSubjectMap] = useState<Record<string, UniversitySubject[]>>({});
+  const [moduleMap, setModuleMap]   = useState<Record<string, UniversityModule[]>>({});
+  const [topicMap, setTopicMap]     = useState<Record<string, UniversityTopic[]>>({});
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -223,15 +224,15 @@ export const Admin: React.FC = () => {
   };
   const fetchSubjects = async (univId: string) => {
      const { data } = await supabase.from('university_subjects').select('*').eq('university_id', univId).order('order_index', { ascending: true });
-     if (data) setSubjects(data as UniversitySubject[]);
+     if (data) setSubjectMap(prev => ({ ...prev, [univId]: data as UniversitySubject[] }));
   };
   const fetchModules = async (subjId: string) => {
      const { data } = await supabase.from('university_modules').select('*').eq('university_subject_id', subjId).order('order_index', { ascending: true });
-     if (data) setModules(data as UniversityModule[]);
+     if (data) setModuleMap(prev => ({ ...prev, [subjId]: data as UniversityModule[] }));
   };
   const fetchTopics = async (modId: string) => {
      const { data } = await supabase.from('university_topics').select('*').eq('university_module_id', modId).order('order_index', { ascending: true });
-     if (data) setTopics(data as UniversityTopic[]);
+     if (data) setTopicMap(prev => ({ ...prev, [modId]: data as UniversityTopic[] }));
   };
 
   const addUniversity = async () => {
@@ -252,7 +253,8 @@ export const Admin: React.FC = () => {
   const addSubject = async (univId: string) => {
     if (!newSubj.name) return alert('Subject name required');
     try {
-      await supabase.from('university_subjects').insert({ university_id: univId, name: newSubj.name, icon: newSubj.icon, color: newSubj.color, order_index: subjects.length, is_active: true });
+      const existing = subjectMap[univId]?.length ?? 0;
+      await supabase.from('university_subjects').insert({ university_id: univId, name: newSubj.name, icon: newSubj.icon, color: newSubj.color, order_index: existing, is_active: true });
       setNewSubj({ name: '', icon: '📘', color: '#06b6d4' }); fetchSubjects(univId);
     } catch (error) { console.error(error); }
   };
@@ -267,7 +269,8 @@ export const Admin: React.FC = () => {
   const addModule = async (subjId: string) => {
     if (!newMod.name) return;
     try {
-      await supabase.from('university_modules').insert({ university_subject_id: subjId, name: newMod.name, order_index: modules.length, is_active: true });
+      const existing = moduleMap[subjId]?.length ?? 0;
+      await supabase.from('university_modules').insert({ university_subject_id: subjId, name: newMod.name, order_index: existing, is_active: true });
       setNewMod({ name: '' }); fetchModules(subjId);
     } catch (error) { console.error(error); }
   };
@@ -282,7 +285,8 @@ export const Admin: React.FC = () => {
   const addTopic = async (modId: string) => {
     if (!newTopic.name) return;
     try {
-      await supabase.from('university_topics').insert({ university_module_id: modId, name: newTopic.name, order_index: topics.length, is_active: true });
+      const existing = topicMap[modId]?.length ?? 0;
+      await supabase.from('university_topics').insert({ university_module_id: modId, name: newTopic.name, order_index: existing, is_active: true });
       setNewTopic({ name: '' }); fetchTopics(modId);
     } catch (error) { console.error(error); }
   };
@@ -479,7 +483,7 @@ export const Admin: React.FC = () => {
                             <button onClick={() => addSubject(univ.id)} className="px-6 py-3 bg-black text-brutal-yellow text-lg border-4 border-black font-black uppercase hover:bg-slate-800 transition-colors">APPEND</button>
                         </div>
 
-                        {subjects.map(subj => (
+                        {(subjectMap[univ.id] ?? []).map(subj => (
                           <div key={subj.id} className="border-4 border-black bg-white shadow-[4px_4px_0_#000]">
                             <div className="flex items-center justify-between p-3 border-b-4 border-black" style={{ backgroundColor: subj.color }}>
                               <button onClick={() => { setExpandedSubject(expandedSubject === subj.id ? null : subj.id); if (expandedSubject !== subj.id) fetchModules(subj.id); }} className="flex-1 flex gap-3 items-center">
@@ -516,7 +520,7 @@ export const Admin: React.FC = () => {
                                   <button onClick={()=>addModule(subj.id)} className="bg-black text-white px-6 font-black uppercase border-4 border-black">ADD</button>
                                 </div>
                                 
-                                {modules.map(mod => (
+                                {(moduleMap[subj.id] ?? []).map(mod => (
                                   <div key={mod.id} className="border-4 border-black bg-white shadow-[2px_2px_0_#000]">
                                     <div className="flex items-center justify-between p-3 bg-brutal-lilac border-b-4 border-black">
                                        <button onClick={() => { setExpandedModule(expandedModule === mod.id ? null : mod.id); if (expandedModule !== mod.id) fetchTopics(mod.id); }} className="flex-1 flex gap-2 items-center text-left">
@@ -547,7 +551,7 @@ export const Admin: React.FC = () => {
                                     {/* TOPICS ACCORDION */}
                                     {expandedModule === mod.id && (
                                       <div className="p-4 space-y-2 bg-slate-100">
-                                        {topics.map(topic => (
+                                        {(topicMap[mod.id] ?? []).map(topic => (
                                           <div key={topic.id} className="flex justify-between items-center group bg-white border-2 border-black p-2">
                                             {editingTopicId === topic.id ? (
                                               <input type="text" value={editTopicData.name} onChange={e=>setEditTopicData({name:e.target.value})} className="px-2 py-1 bg-white border-2 border-black text-black font-bold uppercase w-full" />

@@ -1,68 +1,123 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Loader2, Sparkles, BookOpen, RefreshCw } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { supabase } from '@/lib/supabase';
-import { UNIVERSITY_TEMPLATES } from '@/data/templates';
-import type { UniversityTemplate } from '@/data/templates';
 
-// ── University card ──────────────────────────────────────────
-const UniversityCard: React.FC<{
-  template: UniversityTemplate;
-  onSelect: () => void;
-}> = ({ template, onSelect }) => (
-  <button
-    onClick={onSelect}
-    className="w-full text-left p-5 transition-all brutal-card bg-white border-4 border-black"
-  >
-    <div className="flex items-center gap-4">
-      <div className="w-14 h-14 bg-brutal-yellow border-4 border-black flex items-center justify-center text-3xl shrink-0 shadow-[4px_4px_0_#000]">
-        {template.emoji}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-black font-black text-xl uppercase tracking-tighter">{template.name}</p>
-        <p className="text-black/70 font-bold text-sm mt-0.5 uppercase">{template.location}</p>
-        <div className="flex items-center gap-3 mt-2">
-          <span className="text-xs font-black px-2 py-0.5 bg-black text-white border-2 border-black uppercase">
-            {template.subjects.length} SUBJECTS
-          </span>
-          <span className="text-black font-bold text-xs uppercase">
-            {template.subjects.reduce((s, sub) => s + sub.modules.length, 0)} MODS •{' '}
-            {template.subjects.reduce((s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0)} TOPICS
-          </span>
+// ── Types matching DB shape ───────────────────────────────────
+interface DBTopic   { id: string; name: string; order_index: number; }
+interface DBModule  { id: string; name: string; order_index: number; topics: DBTopic[]; }
+interface DBSubject { id: string; name: string; icon: string; color: string; order_index: number; modules: DBModule[]; }
+interface DBTemplate {
+  id: string; name: string; short_name: string; location: string;
+  emoji: string; color: string; description: string;
+  subjects: DBSubject[];
+}
+
+// ── Fetch all university templates from Supabase ──────────────
+async function fetchTemplates(): Promise<DBTemplate[]> {
+  const { data: universities, error } = await supabase
+    .from('universities')
+    .select('*')
+    .eq('is_active', true)
+    .order('name');
+
+  if (error || !universities) return [];
+
+  const templates: DBTemplate[] = [];
+
+  for (const uni of universities) {
+    const { data: subjects } = await supabase
+      .from('university_subjects')
+      .select('*')
+      .eq('university_id', uni.id)
+      .eq('is_active', true)
+      .order('order_index');
+
+    const enrichedSubjects: DBSubject[] = [];
+
+    for (const subj of subjects ?? []) {
+      const { data: modules } = await supabase
+        .from('university_modules')
+        .select('*')
+        .eq('university_subject_id', subj.id)
+        .eq('is_active', true)
+        .order('order_index');
+
+      const enrichedModules: DBModule[] = [];
+
+      for (const mod of modules ?? []) {
+        const { data: topics } = await supabase
+          .from('university_topics')
+          .select('*')
+          .eq('university_module_id', mod.id)
+          .eq('is_active', true)
+          .order('order_index');
+
+        enrichedModules.push({ ...mod, topics: topics ?? [] });
+      }
+
+      enrichedSubjects.push({ ...subj, modules: enrichedModules });
+    }
+
+    templates.push({ ...uni, subjects: enrichedSubjects });
+  }
+
+  return templates;
+}
+
+// ── University card ───────────────────────────────────────────
+const UniversityCard: React.FC<{ template: DBTemplate; onSelect: () => void }> = ({ template, onSelect }) => {
+  const totalTopics = template.subjects.reduce(
+    (s, sub) => s + sub.modules.reduce((m, mod) => m + mod.topics.length, 0), 0
+  );
+
+  return (
+    <button onClick={onSelect} className="w-full text-left p-5 transition-all brutal-card bg-white border-4 border-black">
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 bg-brutal-yellow border-4 border-black flex items-center justify-center text-3xl shrink-0 shadow-[4px_4px_0_#000]">
+          {template.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-black font-black text-xl uppercase tracking-tighter">{template.name}</p>
+          <p className="text-black/70 font-bold text-sm mt-0.5 uppercase">{template.location}</p>
+          {template.description && (
+            <p className="text-black/50 font-semibold text-xs mt-1">{template.description}</p>
+          )}
+          <div className="flex items-center gap-3 mt-2">
+            <span className="text-xs font-black px-2 py-0.5 bg-black text-white border-2 border-black uppercase">
+              {template.subjects.length} SUBJECTS
+            </span>
+            <span className="text-black font-bold text-xs uppercase">
+              {template.subjects.reduce((s, sub) => s + sub.modules.length, 0)} MODS •{' '}{totalTopics} TOPICS
+            </span>
+          </div>
+        </div>
+        <div className="w-10 h-10 border-4 border-black bg-brutal-pink text-black flex items-center justify-center shrink-0">
+          <ChevronDown className="w-6 h-6 stroke-[3]" style={{ transform: 'rotate(-90deg)' }} />
         </div>
       </div>
-      <div className="w-10 h-10 border-4 border-black bg-brutal-pink text-black flex items-center justify-center shrink-0">
-        <ChevronDown className="w-6 h-6 stroke-[3]" style={{ transform: 'rotate(-90deg)' }} />
-      </div>
-    </div>
-  </button>
-);
+    </button>
+  );
+};
 
-// ── Subject picker for a chosen university ───────────────────
+// ── Subject picker ────────────────────────────────────────────
 const SubjectPicker: React.FC<{
-  template: UniversityTemplate;
+  template: DBTemplate;
   onBack: () => void;
   onDone: () => void;
 }> = ({ template, onBack, onDone }) => {
   const { userId, refreshSubjects } = useApp();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const [adding, setAdding] = useState(false);
-  const [done, setDone] = useState(false);
+  const [adding, setAdding]     = useState(false);
+  const [done, setDone]         = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
   const toggle = (i: number) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
+    setSelected(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
   const toggleExpand = (i: number) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
+    setExpanded(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
   const selectAll = () => setSelected(new Set(template.subjects.map((_, i) => i)));
   const clearAll  = () => setSelected(new Set());
@@ -70,42 +125,56 @@ const SubjectPicker: React.FC<{
   const handleAdd = async () => {
     if (!userId || selected.size === 0) return;
     setAdding(true);
+    setError(null);
 
-    for (const idx of Array.from(selected)) {
-      const sub = template.subjects[idx];
+    try {
+      for (const idx of Array.from(selected)) {
+        const sub = template.subjects[idx];
 
-      const { data: subjectRow, error: subErr } = await supabase
-        .from('subjects')
-        .insert({ user_id: userId, name: sub.name, icon: sub.icon, color: sub.color })
-        .select()
-        .single();
-
-      if (subErr || !subjectRow) continue;
-
-      for (const mod of sub.modules) {
-        const { data: moduleRow, error: modErr } = await supabase
-          .from('modules')
-          .insert({ subject_id: subjectRow.id, user_id: userId, name: mod.name })
+        const { data: subjectRow, error: subErr } = await supabase
+          .from('subjects')
+          .insert({ user_id: userId, name: sub.name, icon: sub.icon, color: sub.color })
           .select()
           .single();
 
-        if (modErr || !moduleRow) continue;
+        if (subErr || !subjectRow) {
+          console.error('Subject insert error:', subErr?.message);
+          continue;
+        }
 
-        if (mod.topics.length > 0) {
-          await supabase.from('topics').insert(
-            mod.topics.map((t) => ({
-              module_id: moduleRow.id,
-              user_id: userId,
-              name: t,
-            }))
-          );
+        for (const mod of sub.modules) {
+          const { data: moduleRow, error: modErr } = await supabase
+            .from('modules')
+            .insert({ subject_id: subjectRow.id, user_id: userId, name: mod.name, order_index: mod.order_index })
+            .select()
+            .single();
+
+          if (modErr || !moduleRow) {
+            console.error('Module insert error:', modErr?.message);
+            continue;
+          }
+
+          if (mod.topics.length > 0) {
+            const { error: topicErr } = await supabase.from('topics').insert(
+              mod.topics.map((t, ti) => ({
+                module_id:   moduleRow.id,
+                user_id:     userId,
+                name:        t.name,
+                order_index: t.order_index ?? ti,
+              }))
+            );
+            if (topicErr) console.error('Topics insert error:', topicErr.message);
+          }
         }
       }
-    }
 
-    await refreshSubjects();
-    setAdding(false);
-    setDone(true);
+      await refreshSubjects();
+      setDone(true);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+    } finally {
+      setAdding(false);
+    }
   };
 
   if (done) {
@@ -115,8 +184,12 @@ const SubjectPicker: React.FC<{
           <Check className="w-12 h-12 text-black stroke-[4]" />
         </div>
         <div className="text-center brutal-box p-6 bg-white shadow-[6px_6px_0_#000]">
-          <p className="text-black text-2xl font-black uppercase mb-2 leading-none">{selected.size} SUBJECT{selected.size > 1 ? 'S' : ''} ACQUIRED!</p>
-          <p className="text-black/60 text-sm font-bold uppercase">All modules and topics injected into your curriculum.</p>
+          <p className="text-black text-2xl font-black uppercase mb-2 leading-none">
+            {selected.size} SUBJECT{selected.size > 1 ? 'S' : ''} ACQUIRED!
+          </p>
+          <p className="text-black/60 text-sm font-bold uppercase">
+            All modules and topics injected into your curriculum.
+          </p>
         </div>
         <button
           onClick={onDone}
@@ -139,8 +212,10 @@ const SubjectPicker: React.FC<{
           <ArrowLeft className="w-6 h-6 stroke-[3]" />
         </button>
         <div className="flex-1 min-w-0">
-          <h2 className="text-black font-black text-2xl uppercase tracking-tighter leading-none">{template.emoji} {template.name}</h2>
-          <p className="text-black/60 font-bold text-xs uppercase mt-1">Select curriculum payload to extract</p>
+          <h2 className="text-black font-black text-2xl uppercase tracking-tighter leading-none">
+            {template.emoji} {template.name}
+          </h2>
+          <p className="text-black/60 font-bold text-xs uppercase mt-1">Select subjects to import</p>
         </div>
       </div>
 
@@ -159,16 +234,27 @@ const SubjectPicker: React.FC<{
         </div>
       </div>
 
+      {/* Error */}
+      {error && (
+        <div className="brutal-box p-4 bg-red-100 border-4 border-red-500">
+          <p className="text-red-700 font-black text-sm uppercase">⚠ {error}</p>
+        </div>
+      )}
+
       {/* Subject list */}
       <div className="space-y-4">
         {template.subjects.map((sub, idx) => {
-          const isSelected = selected.has(idx);
-          const isExpanded = expanded.has(idx);
-          const topicCount = sub.modules.reduce((s, m) => s + m.topics.length, 0);
+          const isSelected  = selected.has(idx);
+          const isExpanded  = expanded.has(idx);
+          const topicCount  = sub.modules.reduce((s, m) => s + m.topics.length, 0);
 
           return (
-            <div key={idx} className={`brutal-box overflow-hidden transition-all duration-200 border-4 border-black ${isSelected ? 'bg-brutal-yellow shadow-[6px_6px_0_#000] translate-x-[-2px] translate-y-[-2px]' : 'bg-white shadow-[2px_2px_0_#000]'}`}>
-              {/* Subject row */}
+            <div
+              key={sub.id}
+              className={`brutal-box overflow-hidden transition-all duration-200 border-4 border-black ${
+                isSelected ? 'bg-brutal-yellow shadow-[6px_6px_0_#000] -translate-x-0.5 -translate-y-0.5' : 'bg-white shadow-[2px_2px_0_#000]'
+              }`}
+            >
               <div className="flex items-center gap-3 p-4">
                 {/* Checkbox */}
                 <button
@@ -201,18 +287,18 @@ const SubjectPicker: React.FC<{
               {/* Expanded module preview */}
               {isExpanded && (
                 <div className="bg-slate-100 border-t-4 border-black">
-                  {sub.modules.map((mod, mi) => (
-                    <div key={mi} className="px-4 py-3 border-b-2 border-black border-dashed last:border-b-0">
+                  {sub.modules.map((mod) => (
+                    <div key={mod.id} className="px-4 py-3 border-b-2 border-black border-dashed last:border-b-0">
                       <p className="text-black text-sm font-black uppercase mb-2">{mod.name}</p>
                       <div className="flex flex-wrap gap-2">
-                        {mod.topics.slice(0, 4).map((t, ti) => (
-                          <span key={ti} className="text-[10px] px-2 py-1 font-bold bg-white border-2 border-black text-black uppercase">
-                            {t}
+                        {mod.topics.slice(0, 5).map((t) => (
+                          <span key={t.id} className="text-[10px] px-2 py-1 font-bold bg-white border-2 border-black text-black uppercase">
+                            {t.name}
                           </span>
                         ))}
-                        {mod.topics.length > 4 && (
+                        {mod.topics.length > 5 && (
                           <span className="text-[10px] px-2 py-1 font-black bg-brutal-pink border-2 border-black text-black uppercase">
-                            +{mod.topics.length - 4} MORE
+                            +{mod.topics.length - 5} MORE
                           </span>
                         )}
                       </div>
@@ -233,7 +319,7 @@ const SubjectPicker: React.FC<{
           className="w-full font-black py-5 brutal-btn text-xl uppercase disabled:opacity-50 flex items-center justify-center gap-3 transition-colors bg-brutal-green text-black hover:bg-[#00e0a0]"
         >
           {adding
-            ? <><Loader2 className="w-6 h-6 animate-spin stroke-[3]" /> INJECTING DATA...</>
+            ? <><Loader2 className="w-6 h-6 animate-spin stroke-[3]" /> IMPORTING...</>
             : <><BookOpen className="w-6 h-6 stroke-[3]" /> IMPORT {selected.size > 0 ? `${selected.size} ` : ''}SUBJECT{selected.size !== 1 ? 'S' : ''}</>}
         </button>
       </div>
@@ -241,10 +327,21 @@ const SubjectPicker: React.FC<{
   );
 };
 
-// ── Main Templates page ──────────────────────────────────────
+// ── Main Templates page ───────────────────────────────────────
 export const Templates: React.FC = () => {
   const { navigate } = useApp();
-  const [chosenTemplate, setChosenTemplate] = useState<UniversityTemplate | null>(null);
+  const [templates, setTemplates]           = useState<DBTemplate[]>([]);
+  const [loading, setLoading]               = useState(true);
+  const [chosenTemplate, setChosenTemplate] = useState<DBTemplate | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await fetchTemplates();
+    setTemplates(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (chosenTemplate) {
     return (
@@ -266,32 +363,63 @@ export const Templates: React.FC = () => {
         >
           <ArrowLeft className="w-6 h-6 stroke-[3]" />
         </button>
-        <div>
+        <div className="flex-1">
           <h2 className="text-white font-black text-2xl uppercase tracking-tighter leading-none flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-brutal-yellow fill-brutal-yellow stroke-[2]" /> TEMPLATES
           </h2>
-          <p className="text-white font-bold text-xs uppercase mt-1 drop-shadow-[1px_1px_0_#000]">Prebuilt curriculum masters</p>
+          <p className="text-white font-bold text-xs uppercase mt-1">Prebuilt curriculum masters</p>
         </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="w-10 h-10 brutal-btn bg-white flex items-center justify-center"
+          title="Refresh templates"
+        >
+          <RefreshCw className={`w-5 h-5 stroke-[2.5] ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Banner */}
       <div className="brutal-box p-5 bg-brutal-yellow border-4 border-black shadow-[4px_4px_0_#000]">
         <p className="text-black font-black text-sm uppercase leading-tight">
-          Select a master template below to instantly copy all required modules and topics directly into your personal dashboard!
+          Select a curriculum template to instantly copy all subjects, modules and topics into your personal dashboard!
         </p>
       </div>
 
-      {/* University grid */}
-      <div className="space-y-4">
-        {UNIVERSITY_TEMPLATES.map((t) => (
-          <UniversityCard key={t.id} template={t} onSelect={() => setChosenTemplate(t)} />
-        ))}
-      </div>
+      {/* Loading */}
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-black stroke-[2.5]" />
+          <p className="text-black font-black uppercase text-sm">Loading templates from database...</p>
+        </div>
+      )}
 
-      {/* More coming soon */}
-      <div className="brutal-box p-6 text-center bg-slate-200 border-dashed border-4 border-black shadow-none mt-4">
-        <p className="text-black font-black text-sm uppercase">More universities transmitting soon...</p>
-      </div>
+      {/* Empty state */}
+      {!loading && templates.length === 0 && (
+        <div className="brutal-box p-8 text-center bg-white border-4 border-black border-dashed shadow-none">
+          <p className="text-black font-black text-2xl uppercase mb-2">NO TEMPLATES YET</p>
+          <p className="text-black/60 font-bold text-sm uppercase mb-4">An admin needs to add university templates first.</p>
+          <p className="text-black/50 font-semibold text-xs">
+            Go to Admin → Curriculum to add subjects, modules and topics.
+          </p>
+        </div>
+      )}
+
+      {/* University grid */}
+      {!loading && templates.length > 0 && (
+        <div className="space-y-4">
+          {templates.map(t => (
+            <UniversityCard key={t.id} template={t} onSelect={() => setChosenTemplate(t)} />
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      {!loading && templates.length > 0 && (
+        <div className="brutal-box p-6 text-center bg-slate-200 border-dashed border-4 border-black shadow-none mt-2">
+          <p className="text-black font-black text-sm uppercase">More universities coming soon...</p>
+        </div>
+      )}
     </div>
   );
 };
