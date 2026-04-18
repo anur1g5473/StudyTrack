@@ -280,6 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const init = async (uid: string) => {
       userIdRef.current = uid;
+      setUserId(uid); // ← CRITICAL: populate userId state so inserts have the right user_id
       // Immediately try to load from cache so app opens instantly
       const cachedProfile = await idbGet<Profile>(`profile:${uid}`);
       if (cachedProfile) {
